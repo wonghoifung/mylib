@@ -15,11 +15,12 @@ endif
 
 CPPFLAGS += -Wall
 CPPFLAGS += -I/data/antwars/lib/boost_1_51_0/ 
-
+#CPPFLAGS += -I/Users/wonghoifung/myenvironment/include/ 
 
 LIBS = -lcurl -lboost_thread -lboost_date_time -lboost_system
 LINKFLAGS = -L/usr/local/lib 
 LINKFLAGS += -L/data/antwars/lib/boost_1_51_0/stage/lib 
+#LINKFLAGS += -L/Users/wonghoifung/myenvironment/lib/ 
 
 #set the include dirs
 INCLUDEDIRS = ./ ./src/
