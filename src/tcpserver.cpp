@@ -170,23 +170,22 @@ int tcpserver::handle_accept()
         socketops::set_socketbuf(conn_fd,16*1024);
         if(socketops::set_nonblock(conn_fd) < 0)
         {
-            log_error("SetNonblock faild \n");
+            log_error("set nonblock failure");
             socketops::myclose(conn_fd);
             assert(false);
             continue;
         }
         if(socketops::set_keepalive(conn_fd) < 0)
         {
-            log_error("set_keepalive faild \n");
+            log_error("set keepalive failure");
             socketops::myclose(conn_fd);
             assert(false);
             continue;
-        }	
-        
+        }
         tcphandler* sh = allocatehandler(conn_fd);
         if(sh == NULL)
         {
-            log_error("sh is null \n");
+            log_error("allocate tcphandler failure");
             socketops::myclose(conn_fd);
             assert(false);
             continue;
@@ -225,7 +224,7 @@ tcphandler* tcpserver::allocatehandler(SOCKET sock_fd)
 }
 bool tcpserver::disconnect(tcphandler * pSocketHandler)
 {
-    log_debug("disconnect \n");
+    log_debug("disconnect");
     handle_close(pSocketHandler);
  	return true;
 }
@@ -254,11 +253,7 @@ void tcpserver::addsocket(tcphandler * s)
     assert( s->getfd() < MAX_DESCRIPTORS );
     assert(handles_[s->getfd()] == 0);
     handles_[s->getfd()] = s;
-    
-#ifdef WIN32
-    FD_SET(s->getfd(), &m_rset);
-    maxfd_ = (s->getfd() > maxfd_) ? s->getfd() : maxfd_;    
-#else
+
     struct epoll_event ev;
     memset(&ev, 0, sizeof(epoll_event));
 
@@ -267,7 +262,6 @@ void tcpserver::addsocket(tcphandler * s)
 
     ev.events = EPOLLIN;
     epoll_ctl(epollfd_, EPOLL_CTL_ADD, s->getfd(), &ev);
-#endif
 }
 
 void tcpserver::delsocket(tcphandler * s)
