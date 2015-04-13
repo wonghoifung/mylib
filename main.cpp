@@ -3,10 +3,10 @@
 #include <boost/noncopyable.hpp>
 
 #include "timer.h"
-#include "PacketBase.h"
-#include "TcpServer.h"
-#include "SocketServer.h"
-#include "SocketHandler.h"
+#include "pack1.h"
+#include "tcpserver.h"
+#include "myserver.h"
+#include "myhandler.h"
 
 /* client send first */
 enum {

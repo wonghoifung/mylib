@@ -1,11 +1,18 @@
 #pragma once
 
-#include "TcpHandler.h"
-#include "PacketBase.h"
-#include "PacketParser.h"
+#include "tcphandler.h"
+#include "pack1.h"
+#include "packparser1.h"
 #include "define.h"
 #include <map>
 using namespace std;
+
+enum
+{
+	st_connected = 0, 
+	st_parsing, 
+	st_closed,
+};
 
 class SocketHandler:public TcpHandler				
 {

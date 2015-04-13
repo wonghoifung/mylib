@@ -7,10 +7,10 @@
 
 #define RECV_BUFFER 4096
 
-#include "TimerEvent.h"
-#include "TimerOutEvent.h"
+#include "timerwrapper.h"
+#include "timerhandler.h"
 #include <map>
-#include "LoopBuffer.h"
+#include "loopbuf.h"
 
 using namespace std;
 class TcpServer;

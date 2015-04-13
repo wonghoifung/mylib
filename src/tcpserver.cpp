@@ -1,11 +1,11 @@
 
-#include "TcpServer.h"
+#include "tcpserver.h"
 #include "timer.h"
 #include "llist.h"
 #include "log.h"
 #include <time.h>
 #include <assert.h>
-#include "SockerAPI.h"
+#include "socketops.h"
 
 #define EVENT_TOTAL_COUNT	100000
 // 10w Á¬½ÓÊý
@@ -34,10 +34,10 @@ TcpServer::TcpServer()
 
 TcpServer::~TcpServer()
 {	
-    CSocker::SocketClose(m_listen_fd);
+    socketops::myclose(m_listen_fd);
 
 #ifndef WIN32
-    CSocker::SocketClose(m_epoll_fd);
+    socketops::myclose(m_epoll_fd);
     free(m_epev_arr);
 #endif
     free(fds);  
@@ -61,10 +61,10 @@ bool TcpServer::InitSocket(int listen_port)
 	if (m_listen_fd == INVALID_SOCKET)
 		return false;
 
-    CSocker::SocketReUse(m_listen_fd);
-	CSocker::SocketNoBlock(m_listen_fd);
+    socketops::set_reuse(m_listen_fd);
+	socketops::set_nonblock(m_listen_fd);
 
-    int ret = CSocker::ServerListen(m_listen_fd,listen_port);
+    int ret = socketops::mylisten(m_listen_fd,listen_port);
     if(ret < 0)
         return false;
 
@@ -267,22 +267,22 @@ int TcpServer::handle_accept()
 	SOCKET conn_fd;
     do 
     {
-        if((conn_fd = CSocker::ServerAccept(m_listen_fd)) == INVALID_SOCKET)
+        if((conn_fd = socketops::myaccept(m_listen_fd)) == INVALID_SOCKET)
         {
             break;
         }
-        CSocker::SetSocketMem(conn_fd,16*1024);
-        if(CSocker::SocketNoBlock(conn_fd) < 0)
+        socketops::set_socketbuf(conn_fd,16*1024);
+        if(socketops::set_nonblock(conn_fd) < 0)
         {
             log_error("SetNonblock faild \n");
-            CSocker::SocketClose(conn_fd);
+            socketops::myclose(conn_fd);
             assert(false);
             continue;
         }
-        if(CSocker::SetTcpKeepLive(conn_fd) < 0)
+        if(socketops::set_keepalive(conn_fd) < 0)
         {
-            log_error("SetTcpKeepLive faild \n");
-            CSocker::SocketClose(conn_fd);
+            log_error("set_keepalive faild \n");
+            socketops::myclose(conn_fd);
             assert(false);
             continue;
         }	
@@ -291,7 +291,7 @@ int TcpServer::handle_accept()
         if(sh == NULL)
         {
             log_error("sh is null \n");
-            CSocker::SocketClose(conn_fd);
+            socketops::myclose(conn_fd);
             assert(false);
             continue;
         }
@@ -333,7 +333,7 @@ bool TcpServer::DisConnect(TcpHandler * pSocketHandler)
     handle_close(pSocketHandler);
  	return true;
 }
-bool TcpServer::Register(TcpHandler *pHandler)
+bool TcpServer::reg(TcpHandler *pHandler)
 {
     if(pHandler == NULL)
         return false;
@@ -394,7 +394,7 @@ void TcpServer::RemoveSocket(TcpHandler * s)
 
     epoll_ctl(m_epoll_fd, EPOLL_CTL_DEL, s->GetFd(), &ev);
 #endif
-    CSocker::SocketClose(s->GetFd());
+    socketops::myclose(s->GetFd());
 }
 
 void TcpServer::WantWrite(TcpHandler * s)

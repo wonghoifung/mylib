@@ -3,7 +3,7 @@
 #include <Windows.h>
 #endif
 
-#include "LoopBuffer.h"
+#include "loopbuf.h"
 
  //构造和析构
 CLoopBuffer::CLoopBuffer()

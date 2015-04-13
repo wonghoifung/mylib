@@ -2,7 +2,7 @@
 #define BOYAA_TIMER_EVENT_H_20110313
 
 #include "timer.h"
-#include "TimerOutEvent.h"
+#include "timerhandler.h"
 
 // ¶¨Ê±Æ÷Àà
 class TimerEvent

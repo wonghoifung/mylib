@@ -1,8 +1,8 @@
 #pragma once
 //#include "ichatlib.h"
-#include "TcpServer.h"
-#include "SocketHandler.h"
-#include "TimerEvent.h"
+#include "tcpserver.h"
+#include "myhandler.h"
+#include "timerwrapper.h"
 #include <map>
 
 using namespace std;

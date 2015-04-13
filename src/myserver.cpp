@@ -1,5 +1,5 @@
-#include "SocketServer.h"
-#include "SockerAPI.h"
+#include "myserver.h"
+#include "socketops.h"
 
 using namespace std;
 

@@ -1,6 +1,6 @@
-#include "PacketParser.h"
-#include "PacketBase.h"
-#include "SocketHandler.h"
+#include "packparser1.h"
+#include "pack1.h"
+#include "myhandler.h"
 
 class CPacketParser :  public IPacketParser
 {

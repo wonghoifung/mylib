@@ -1,8 +1,8 @@
-#include "SocketHandler.h"
-#include "SocketServer.h"
+#include "myhandler.h"
+#include "myserver.h"
 #include <time.h>
 //#include "EncryptDecrypt.h"
-#include "SockerAPI.h"
+#include "socketops.h"
 
 namespace
 {
@@ -38,7 +38,7 @@ int SocketHandler::Send(NETOutputPacket *pPacket)
 // OnParser 协议解析
 int SocketHandler::OnParser(char *buf, int nLen)
 {
-	m_nStatus = REQUEST;
+	m_nStatus = st_parsing;
 	m_TcpTimer.StopTimer();	//15内有请求取消定时
 	if(nLen == 23 && buf[0] == '<' && buf[1] == 'p')
 	{
@@ -74,7 +74,7 @@ int SocketHandler::OnPacketComplete(NETInputPacket *pPacket)
 // OnClose
 int SocketHandler::OnClose(void)
 {
-	m_nStatus = CLOSE;	
+	m_nStatus = st_closed;	
     SocketServer *pServer = (SocketServer*)this->server();
     if(pServer != NULL)
         pServer->OnDisconnect(this);
@@ -83,7 +83,7 @@ int SocketHandler::OnClose(void)
 // OnConnected
 int SocketHandler::OnConnected(void)
 {
-	m_nStatus = CONNECT;
+	m_nStatus = st_connected;
     SocketServer *pServer = (SocketServer*)this->server();
     if(pServer != NULL)
         pServer->OnConnect(this);

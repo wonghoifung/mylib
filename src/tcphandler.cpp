@@ -1,12 +1,12 @@
-#include "TcpHandler.h"
+#include "tcphandler.h"
 #include "log.h"
-#include "SockerAPI.h"
+#include "socketops.h"
 
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
 #include <time.h>
-#include "TcpServer.h"
+#include "tcpserver.h"
 
 #ifdef WIN32
     #ifndef EWOULDBLOCK
@@ -93,7 +93,7 @@ int TcpHandler::handle_output()
     do 
     {
         nPeekLen = m_pSendLoopBuffer->Peek(m_pTmpSendBuffer,sizeof(m_pTmpSendBuffer));
-        nHaveSendLen = CSocker::SocketSend(GetFd(),m_pTmpSendBuffer, nPeekLen);
+        nHaveSendLen = socketops::mysend(GetFd(),m_pTmpSendBuffer, nPeekLen);
 
         //Send data block
         if( nHaveSendLen < 0 ) 
