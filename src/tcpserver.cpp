@@ -88,12 +88,12 @@ bool tcpserver::run()
 				handle_accept();
 				continue;
 			}
-			int fd = (uint32_t)epollevarr_[i].data.u64; // mask out the lower 32 bits
+			int fd = (uint32_t)epollevarr_[i].data.u64;
 			uint32 index = (uint32_t)(epollevarr_[i].data.u64 >> 32);
 			tcphandler* s = handles_[fd];
 			if( s == 0 || s->get_fd_index() != index )
 			{                      
-				continue;       // epoll returned invalid fd 
+				continue; // epoll returned invalid fd 
 			}
 			if(epollevarr_[i].events & ( EPOLLHUP | EPOLLERR ))
 			{    
@@ -222,13 +222,15 @@ tcphandler* tcpserver::allocatehandler(SOCKET sock_fd)
 	}
 	return sh;
 }
-bool tcpserver::disconnect(tcphandler * pSocketHandler)
+
+bool tcpserver::disconnect(tcphandler* pSocketHandler)
 {
     log_debug("disconnect");
     handle_close(pSocketHandler);
  	return true;
 }
-bool tcpserver::reg(tcphandler *pHandler)
+
+bool tcpserver::reg(tcphandler* pHandler)
 {
     if(pHandler == NULL)
         return false;
@@ -241,14 +243,12 @@ bool tcpserver::reg(tcphandler *pHandler)
 	return true;
 }
 
-void tcpserver::addsocket(tcphandler * s)
+void tcpserver::addsocket(tcphandler* s)
 {
     countfd_++;
     fdindex_++;
 
     s->set_fd_index(fdindex_);
-
-    //log_debug("Add one fd:%d ,Cur handles_£º%d \n",s->getfd(),countfd_);
 
     assert( s->getfd() < MAX_DESCRIPTORS );
     assert(handles_[s->getfd()] == 0);
@@ -257,25 +257,19 @@ void tcpserver::addsocket(tcphandler * s)
     struct epoll_event ev;
     memset(&ev, 0, sizeof(epoll_event));
 
-    /* store the generation counter in the upper 32 bits, the fd in the lower 32 bits */
     ev.data.u64 = (uint64_t)(uint32)(s->getfd()) | ((uint64_t)(uint32)(s->get_fd_index()) << 32);
 
     ev.events = EPOLLIN;
     epoll_ctl(epollfd_, EPOLL_CTL_ADD, s->getfd(), &ev);
 }
 
-void tcpserver::delsocket(tcphandler * s)
+void tcpserver::delsocket(tcphandler* s)
 {
     countfd_--;
-    //log_debug("delete one fd: %d ,cur handles_: %d \n",s->getfd(),countfd_);
 
     assert(handles_[s->getfd()] == s);
     handles_[s->getfd()] = 0;
 
-#ifdef WIN32
-    FD_CLR(s->getfd(), &m_rset);
-    FD_CLR(s->getfd(), &m_wset);
-#else
     struct epoll_event ev;
     memset(&ev, 0, sizeof(epoll_event));
     ev.data.u64 = (uint64_t)(uint32)(s->getfd()) | ((uint64_t)(uint32)(s->get_fd_index()) << 32);
@@ -283,29 +277,26 @@ void tcpserver::delsocket(tcphandler * s)
     ev.events =  EPOLLOUT | EPOLLIN;
 
     epoll_ctl(epollfd_, EPOLL_CTL_DEL, s->getfd(), &ev);
-#endif
+
     socketops::myclose(s->getfd());
 }
 
-void tcpserver::want_to_write(tcphandler * s)
+void tcpserver::want_to_write(tcphandler* s)
 {
-#ifndef WIN32
     struct epoll_event ev;
     memset(&ev, 0, sizeof(epoll_event));
     ev.data.u64 = (uint64_t)(uint32)(s->getfd()) | ((uint64_t)(uint32)(s->get_fd_index()) << 32);
 
     ev.events = EPOLLOUT ;
     epoll_ctl(epollfd_, EPOLL_CTL_MOD, s->getfd(), &ev);
-#endif
 }
-void tcpserver::want_to_read(tcphandler * s)
+
+void tcpserver::want_to_read(tcphandler* s)
 {
-#ifndef WIN32
     struct epoll_event ev;
     memset(&ev, 0, sizeof(epoll_event));
     ev.data.u64 = (uint64_t)(uint32)(s->getfd()) | ((uint64_t)(uint32)(s->get_fd_index()) << 32);
 
     ev.events = EPOLLIN ;
     epoll_ctl(epollfd_, EPOLL_CTL_MOD, s->getfd(), &ev);
-#endif
 }
