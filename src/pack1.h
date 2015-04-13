@@ -1,7 +1,7 @@
-#ifndef _ICHAT_PACKETBASE_H_
-#define _ICHAT_PACKETBASE_H_
+#ifndef PACK1_HEADER
+#define PACK1_HEADER
 ///////////////////////////////////////////////////////////////////////////////
-// PacketBase
+// pack1
 ////////////////////////////////////////////////////////////////////////////////
 #include "define.h"
 #include "log.h"
@@ -14,7 +14,7 @@
 
 using namespace std;
 
-class PacketBase
+class pack1
 {
 public:
 	enum PACKETVER
@@ -24,8 +24,8 @@ public:
 	};
 
 public:
-	PacketBase(void){ m_nPacketSize = 0;}
-	virtual ~PacketBase(void){}
+	pack1(void){ m_nPacketSize = 0;}
+	virtual ~pack1(void){}
 
 	char *packet_buf(void)	{return m_strBuf;}
 	int packet_size(void)	{return m_nPacketSize;}
@@ -204,10 +204,10 @@ protected:
 };
 
 //template <int _buffer_size>
-class NETInputPacket: public PacketBase//<_buffer_size>
+class inpack1: public pack1//<_buffer_size>
 {
 public:
-	typedef PacketBase/*<_buffer_size>*/ base;
+	typedef pack1/*<_buffer_size>*/ base;
 
 	int ReadInt(void)		{int nValue = -1; base::_Read((char*)&nValue, sizeof(int)); return nValue;} //这里必需初始化
 	unsigned int ReadUInt(void)	{unsigned int nValue = 0; base::_Read((char*)&nValue, sizeof(unsigned int)); return nValue; }
@@ -308,13 +308,13 @@ public:
 };
 
 //template <int BUFFER_SIZE>
-class NETOutputPacket: public PacketBase//<BUFFER_SIZE>
+class outpack1: public pack1//<BUFFER_SIZE>
 {
 	bool m_isCheckCode;
 public:
-	NETOutputPacket(void){m_isCheckCode = false;}
+	outpack1(void){m_isCheckCode = false;}
 public:
-	typedef PacketBase base;
+	typedef pack1 base;
 
 	bool WriteInt(int nValue)		{return base::_Write((char*)&nValue, sizeof(int));}
 	bool WriteUInt(unsigned int nValue)	{return base::_Write((char*)&nValue, sizeof(unsigned int));}
@@ -446,5 +446,5 @@ public:
 	}
 };
 
-#endif //_ICHAT_PACKETBASE_H_
+#endif //PACK1_HEADER
 

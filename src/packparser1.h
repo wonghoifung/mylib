@@ -1,29 +1,29 @@
-#ifndef _PACKPARSER_H_
-#define _PACKPARSER_H_
+#ifndef PACKPARSER1_HEADER
+#define PACKPARSER1_HEADER
 
 #include <cstddef>
 
 using namespace std;
-class NETInputPacket;
-class TcpHandler;
+class inpack1;
+class tcphandler;
 
-class IPacketParser
+class ipackparser
 {
 protected:
-	IPacketParser() {};
+	ipackparser() {};
 
 public:
-	IPacketParser(TcpHandler * pHandler):m_pHandler(pHandler) {};
+	ipackparser(tcphandler * pHandler):m_pHandler(pHandler) {};
 
-	virtual ~IPacketParser() {};
+	virtual ~ipackparser() {};
 
 public:
 	virtual int ParsePacket(const char * , const size_t ) = 0;
 
-	static IPacketParser * CreateObject(TcpHandler * pObject);
+	static ipackparser * CreateObject(tcphandler * pObject);
 
 protected:
-	TcpHandler* m_pHandler;
+	tcphandler* m_pHandler;
 };
 
 #endif //_ICHAT_PACKPARSER_H_

@@ -15,7 +15,7 @@ struct time_ev
 	void (*callback)(void* ptr);
 };
 
-// 初始化定时器(在TcpServer初始化前初始化)
+// 初始化定时器(在tcpserver初始化前初始化)
 void init_timer(void);
 // 投递定时器
 int  start_timer(int sec, int usec, struct time_ev* ev);

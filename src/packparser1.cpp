@@ -2,18 +2,18 @@
 #include "pack1.h"
 #include "myhandler.h"
 
-class CPacketParser :  public IPacketParser
+class packparser1 :  public ipackparser
 {
 public:
-	CPacketParser(TcpHandler * pHandler):IPacketParser(pHandler)
+	packparser1(tcphandler * pHandler):ipackparser(pHandler)
 	{
 		m_pBuf = m_Packet.packet_buf();
-		m_version = NETInputPacket::SERVER_PACKET_DEFAULT_VER;
-		m_subVersion = NETInputPacket::SERVER_PACKET_DEFAULT_SUBVER;
+		m_version = inpack1::SERVER_PACKET_DEFAULT_VER;
+		m_subVersion = inpack1::SERVER_PACKET_DEFAULT_SUBVER;
 		reset();
 	}
 
-	virtual ~CPacketParser(void){}
+	virtual ~packparser1(void){}
 
 	// 处理PACKET数据
 	int ParsePacket(const char *data, const size_t length)
@@ -54,7 +54,7 @@ public:
             }
 			if(m_nStatus == REQ_DONE)
 			{
-				m_pHandler->OnPacketComplete(&m_Packet);
+				m_pHandler->onpackcomplete(&m_Packet);
 				this->reset();
 			}
 		}
@@ -84,7 +84,7 @@ private:
 	// PacketBuffer 指针
 	char *m_pBuf;
 	// PacketBuffer
-	NETInputPacket m_Packet;
+	inpack1 m_Packet;
 	// 状态
 	enum REQSTATUS{	REQ_REQUEST=0, REQ_HEADER, REQ_BODY, REQ_DONE, REQ_PROCESS, REQ_ERROR };
 
@@ -99,11 +99,11 @@ private:
 			m_nPacketPos = 0;			
 		}
 		
-		while(m_nPacketPos < NETInputPacket::PACKET_HEADER_SIZE && ndx < length)//
+		while(m_nPacketPos < inpack1::PACKET_HEADER_SIZE && ndx < length)//
 		{
 			m_pBuf[m_nPacketPos++] = data[ndx++];
 		}
-		if(m_nPacketPos < NETInputPacket::PACKET_HEADER_SIZE)
+		if(m_nPacketPos < inpack1::PACKET_HEADER_SIZE)
 			return false;
 
 		return true;
@@ -122,14 +122,14 @@ private:
 			return -3;
 
 		m_nBodyLen = m_Packet.GetBodyLength();
-		if(m_nBodyLen < (NETInputPacket::PACKET_BUFFER_SIZE - NETInputPacket::PACKET_HEADER_SIZE))
+		if(m_nBodyLen < (inpack1::PACKET_BUFFER_SIZE - inpack1::PACKET_HEADER_SIZE))
 			return 0;
 		return -4;
 	}
 	// 解析BODY数据
 	bool parse_body(const char *data, const size_t length, size_t & ndx)
 	{
-		size_t nNeed = (m_nBodyLen + NETInputPacket::PACKET_HEADER_SIZE) - m_nPacketPos;
+		size_t nNeed = (m_nBodyLen + inpack1::PACKET_HEADER_SIZE) - m_nPacketPos;
 		size_t nBuff = length - ndx;
 
 		if(nNeed <= 0)
@@ -144,14 +144,14 @@ private:
 		m_nPacketPos += nCopy;
 		ndx += nCopy;
 
-		if(m_nPacketPos < (m_nBodyLen + NETInputPacket::PACKET_HEADER_SIZE))
+		if(m_nPacketPos < (m_nBodyLen + inpack1::PACKET_HEADER_SIZE))
 			return false;
 
 		return true;
 	}
 };
 
-IPacketParser * IPacketParser::CreateObject(TcpHandler * pObject)
+ipackparser * ipackparser::CreateObject(tcphandler * pObject)
 {
-	return new CPacketParser(pObject);
+	return new packparser1(pObject);
 }

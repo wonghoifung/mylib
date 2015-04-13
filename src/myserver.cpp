@@ -7,62 +7,62 @@ using namespace std;
 	#include <stdarg.h>
 #endif
 
-SocketServer::SocketServer(void)
-:TcpServer()
+myserver::myserver(void)
+:tcpserver()
 {
 	m_nMaxID = 0;
 }
 
-SocketServer::~SocketServer(void)
+myserver::~myserver(void)
 {
 }
 // 继承至ICHAT_TCP_Server, 创建新HANDLER时用
-TcpHandler * SocketServer::CreateHandler(void)
+tcphandler * myserver::createhandler(void)
 {
-	SocketHandler *pNewHandler = NULL;
-    int nHandlerID = GetUseID();
-	pNewHandler = new SocketHandler(nHandlerID);
+	myhandler *pNewHandler = NULL;
+    int nHandlerID = gethid();
+	pNewHandler = new myhandler(nHandlerID);
 	return pNewHandler;
 }
-void  SocketServer::OnConnect(SocketHandler *pHandler )
+void  myserver::onconnect(myhandler *pHandler )
 {
-    int id = pHandler->GetHandlerID();
+    int id = pHandler->gethandlerid();
     if(m_HandlerMap.find(id) == m_HandlerMap.end())
     {
-        m_HandlerMap.insert(map<int, SocketHandler*>::value_type(id,pHandler));
+        m_HandlerMap.insert(map<int, myhandler*>::value_type(id,pHandler));
     }
     else
     {
-        log_debug("SocketServer::ProcessConnected Error %d\r\n", pHandler->GetHandlerID());
+        log_debug("myserver::ProcessConnected Error %d\r\n", pHandler->gethandlerid());
         assert(false);
     }
 }
-void  SocketServer::OnDisconnect(SocketHandler *pHandler )
+void  myserver::ondisconnect(myhandler *pHandler )
 {
-    int id = pHandler->GetHandlerID();
-    map<int, SocketHandler*>::iterator iter = m_HandlerMap.find(id);
+    int id = pHandler->gethandlerid();
+    map<int, myhandler*>::iterator iter = m_HandlerMap.find(id);
     if(iter != m_HandlerMap.end())
     {
         m_HandlerMap.erase(iter);
     }
     else
     {
-        log_debug("SocketServer::ProcessClose Error %d\r\n",pHandler->GetHandlerID());
+        log_debug("myserver::ProcessClose Error %d\r\n",pHandler->gethandlerid());
         assert(false);
     }
 }
 // 超时
-int SocketServer::ProcessOnTimer(SocketHandler *pHandler)
+int myserver::ontimer(myhandler *pHandler)
 {
     log_debug("connect 30s and no packet,disconnect \n");
-    DisConnect(pHandler);
+    disconnect(pHandler);
 	return 0;
 }
 
-// FindHandler
-SocketHandler * SocketServer::FindHandler(int nIndex)
+// gethandler
+myhandler * myserver::gethandler(int nIndex)
 {
-	map<int, SocketHandler*>::iterator iter = m_HandlerMap.find(nIndex);
+	map<int, myhandler*>::iterator iter = m_HandlerMap.find(nIndex);
 
 	if(iter != m_HandlerMap.end())
 	{
@@ -71,7 +71,7 @@ SocketHandler * SocketServer::FindHandler(int nIndex)
 	return NULL;
 }
 
-int SocketServer::GetUseID(void)
+int myserver::gethid(void)
 {
     ++m_nMaxID;
     while(m_HandlerMap.find(m_nMaxID) != m_HandlerMap.end())

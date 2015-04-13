@@ -10,8 +10,8 @@ namespace
     static const int    s_DisNoMsgTime = 30;
 }
 
-SocketHandler::SocketHandler(int nID)
-:TcpHandler()
+myhandler::myhandler(int nID)
+:tcphandler()
 ,m_nHandlerID(nID)
 {	
 	m_nStatus = -1;
@@ -21,7 +21,7 @@ SocketHandler::SocketHandler(int nID)
     m_pParser = NULL;
 }
 
-SocketHandler::~SocketHandler(void)
+myhandler::~myhandler(void)
 {
     if (m_pParser != NULL)
     {
@@ -30,13 +30,13 @@ SocketHandler::~SocketHandler(void)
     }
 }
 
-int SocketHandler::Send(NETOutputPacket *pPacket)
+int myhandler::send_(outpack1 *pPacket)
 {
     //CEncryptDecrypt::EncryptBuffer(*pPacket);
-	return TcpHandler::Send(pPacket->packet_buf(), pPacket->packet_size());
+	return tcphandler::send_(pPacket->packet_buf(), pPacket->packet_size());
 }
-// OnParser 协议解析
-int SocketHandler::OnParser(char *buf, int nLen)
+// onparser 协议解析
+int myhandler::onparser(char *buf, int nLen)
 {
 	m_nStatus = st_parsing;
 	m_TcpTimer.StopTimer();	//15内有请求取消定时
@@ -51,60 +51,60 @@ int SocketHandler::OnParser(char *buf, int nLen)
                 return -1;
             }
 		}
-		TcpHandler::Send(s_policystr.c_str(), (int)s_policystr.size());
+		tcphandler::send_(s_policystr.c_str(), (int)s_policystr.size());
 		return -1;
 	}
     if(m_pParser == NULL)
-        m_pParser = IPacketParser::CreateObject(this);
+        m_pParser = ipackparser::CreateObject(this);
 
 	return m_pParser->ParsePacket(buf, nLen);
 }
 
 // 解析完成
-int SocketHandler::OnPacketComplete(NETInputPacket *pPacket)
+int myhandler::onpackcomplete(inpack1 *pPacket)
 {
 // 	if(CEncryptDecrypt::DecryptBuffer(*pPacket) == -1)
 //     {
 //         log_debug("Decrypt fail \n");
 //         return -1;
 //     }
-	SocketServer *pServer = (SocketServer *)this->server();
-	return pServer->ProcessPacket(pPacket, this, m_nHandlerID);
+	myserver *pServer = (myserver *)this->server();
+	return pServer->onpacket(pPacket, this, m_nHandlerID);
 }
-// OnClose
-int SocketHandler::OnClose(void)
+// onclose
+int myhandler::onclose(void)
 {
 	m_nStatus = st_closed;	
-    SocketServer *pServer = (SocketServer*)this->server();
+    myserver *pServer = (myserver*)this->server();
     if(pServer != NULL)
-        pServer->OnDisconnect(this);
+        pServer->ondisconnect(this);
     return 0;
 }
-// OnConnected
-int SocketHandler::OnConnected(void)
+// onconnected
+int myhandler::onconnected(void)
 {
 	m_nStatus = st_connected;
-    SocketServer *pServer = (SocketServer*)this->server();
+    myserver *pServer = (myserver*)this->server();
     if(pServer != NULL)
-        pServer->OnConnect(this);
+        pServer->onconnect(this);
 
 	m_TcpTimer.StartTimer(s_DisNoMsgTime);   // s_DisNoMsgTime 秒没请求断开
-	GetRemoteAddr();
+	getremoteaddr();
     return 0;
 }
-int	SocketHandler::ProcessOnTimerOut(int Timerid)
+int	myhandler::ontimeout(int Timerid)
 {
-    SocketServer *pServer = (SocketServer*)this->server();
-    int nRet = pServer->ProcessOnTimer(this);
+    myserver *pServer = (myserver*)this->server();
+    int nRet = pServer->ontimer(this);
     return nRet;
 }
 
-void SocketHandler::GetRemoteAddr(void)
+void myhandler::getremoteaddr(void)
 {
 	sockaddr_in remote_addr;
 	memset(&remote_addr, 0, sizeof(remote_addr));
 	int len = sizeof(remote_addr);
-	if(getpeername(GetFd(), reinterpret_cast<sockaddr *> (&remote_addr), (socklen_t*)&len) == 0)
+	if(getpeername(getfd(), reinterpret_cast<sockaddr *> (&remote_addr), (socklen_t*)&len) == 0)
 	{
 		m_addrremote = inet_ntoa(remote_addr.sin_addr);
 		m_nPort = ntohs(remote_addr.sin_port);

@@ -11,11 +11,11 @@ class connector
 public:
 	connector();
 	virtual ~connector();
-	bool open(TcpServer* pServer);
-	bool connect(TcpHandler* pHandler, const string& strAddr, int port);
+	bool open(tcpserver* pServer);
+	bool connect(tcphandler* pHandler, const string& strAddr, int port);
 protected:
-	bool reg(TcpHandler* pHandler);	
-	TcpServer*	m_pNetServer;
+	bool reg(tcphandler* pHandler);	
+	tcpserver*	m_pNetServer;
 };
 
 #endif

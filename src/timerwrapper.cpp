@@ -77,7 +77,7 @@ void TimerEvent::OnTimer(int timer_id)
 	m_bHaveStart = false;
 
 	if(m_TimeEvent != 0)	
-		m_TimeEvent->ProcessOnTimerOut(m_nId);
+		m_TimeEvent->ontimeout(m_nId);
     else
         log_debug("Timeobj is null \n");  
 }

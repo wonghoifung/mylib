@@ -17,10 +17,10 @@
 	#include <sys/socket.h>
 #endif // WIN32
 
-TcpHandler::TcpHandler()
+tcphandler::tcphandler()
 :TimerOutEvent()
 ,m_sock_fd(0)
-,m_fd_index(0)
+,fdindex_(0)
 ,m_bfull(false)
 {
     m_bNeedDel = false;
@@ -30,27 +30,27 @@ TcpHandler::TcpHandler()
 
     m_pSendLoopBuffer = new CLoopBuffer(MAX_LOOP_BUFFER_LEN);
 }
-TcpHandler::~TcpHandler()
+tcphandler::~tcphandler()
 {
 	if(m_pSendLoopBuffer)
 		delete m_pSendLoopBuffer;
 	m_pSendLoopBuffer = NULL;
 }
 
-void TcpHandler::SetFd(int sock_fd)
+void tcphandler::setfd(int sock_fd)
 {
 	m_sock_fd = sock_fd;
 }
-int TcpHandler::GetFd()const
+int tcphandler::getfd()const
 {
 	return m_sock_fd;
 }
 
-int TcpHandler::handle_OnConnected()
+int tcphandler::handle_connected()
 {
-	return OnConnected();
+	return onconnected();
 }
-int TcpHandler::handle_read()
+int tcphandler::handle_read()
 {
     if(m_bfull)
         return -1;
@@ -72,7 +72,7 @@ int TcpHandler::handle_read()
         {
             return -1;/* 忘记close会导致 LT 模式下 CPU 100% */ 
         }
-        int ret = OnParser(m_pRecvBuffer, nRecv);
+        int ret = onparser(m_pRecvBuffer, nRecv);
         if(ret != 0)
             return -1;
         if(nRecv < buff_size)
@@ -81,9 +81,9 @@ int TcpHandler::handle_read()
     return -1;
 }
 
-int TcpHandler::handle_output()
+int tcphandler::handle_output()
 {
-    if(!Writable())
+    if(!writable())
         return 0;
     if(m_bfull)
         return -1;
@@ -93,9 +93,9 @@ int TcpHandler::handle_output()
     do 
     {
         nPeekLen = m_pSendLoopBuffer->Peek(m_pTmpSendBuffer,sizeof(m_pTmpSendBuffer));
-        nHaveSendLen = socketops::mysend(GetFd(),m_pTmpSendBuffer, nPeekLen);
+        nHaveSendLen = socketops::mysend(getfd(),m_pTmpSendBuffer, nPeekLen);
 
-        //Send data block
+        //send_ data block
         if( nHaveSendLen < 0 ) 
         {
             if(errno != EWOULDBLOCK && errno != EINTR)
@@ -114,14 +114,14 @@ int TcpHandler::handle_output()
    return 0;
 }
 
-int TcpHandler::handle_close()
+int tcphandler::handle_close()
 {
 	m_TcpTimer.StopTimer();
-	OnClose();
+	onclose();
 	return 0;
 }
 
-int TcpHandler::Send(const char *buf, int nLen)
+int tcphandler::send_(const char *buf, int nLen)
 {
     if( nLen > (int)m_pSendLoopBuffer->FreeCount())
     {
@@ -133,12 +133,12 @@ int TcpHandler::Send(const char *buf, int nLen)
 	    m_pSendLoopBuffer->Put((char *)buf, nLen);
     handle_output();   
 
-    if(Writable())
-        m_pServer->WantWrite(this);
+    if(writable())
+        m_pServer->want_to_write(this);
 
 	return 0;
 }
-bool TcpHandler::Writable()
+bool tcphandler::writable()
 {
     return ( m_pSendLoopBuffer->DataCount()>0 ) ? true : false;
 }

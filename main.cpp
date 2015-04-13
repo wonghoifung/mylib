@@ -40,22 +40,22 @@ static const std::string ANONYMOUS_KEY = "{0A2CF896-AD56-4574-8419-B318A1ED7803}
 class user : boost::noncopyable
 {
 public:
-	user(int uid, SocketHandler* ph):id_(uid),sockethandler_(ph) {}
+	user(int uid, myhandler* ph):id_(uid),sockethandler_(ph) {}
 	bool init() { timetrack_=time(NULL); return true; }
 	int update_time_track() { timetrack_=time(NULL); return 0; }
 	time_t get_time_track() { return timetrack_; }
 	void set_id(int i) { id_ = i; }
 	int get_id() { return id_; }
-	void set_sockethandler(SocketHandler* pHandler) { sockethandler_ = pHandler; }
-	SocketHandler* get_sockethandler() { return sockethandler_; }
-	void sendmsg(NETOutputPacket* outp) {
+	void set_sockethandler(myhandler* pHandler) { sockethandler_ = pHandler; }
+	myhandler* get_sockethandler() { return sockethandler_; }
+	void sendmsg(outpack1* outp) {
 		if (sockethandler_) {
-			sockethandler_->Send(outp);
+			sockethandler_->send_(outp);
 		}
 	}
 private:
 	int id_;
-	SocketHandler* sockethandler_;
+	myhandler* sockethandler_;
 	time_t timetrack_;
 };
 
@@ -91,13 +91,13 @@ public:
 		}
 		return false;
 	}
-	void sendtoall(NETOutputPacket* outp) {
+	void sendtoall(outpack1* outp) {
 		std::map<int,user*>::iterator beg(users_.begin()), end(users_.end());
 		for (; beg!=end; ++beg) {
 			beg->second->sendmsg(outp);
 		}
 	}
-	bool sendto(int uid, NETOutputPacket* outp) {
+	bool sendto(int uid, outpack1* outp) {
 		user* u = get_user(uid);
 		if (u) {
 			u->sendmsg(outp);
@@ -110,15 +110,15 @@ private:
 	std::map<int,user*> users_;
 };
 
-class myserver : public SocketServer, public TimerOutEvent, boost::noncopyable
+class testserver : public myserver, public TimerOutEvent, boost::noncopyable
 {
 public:
-	myserver() {
+	testserver() {
 		timer_heartbeat_.SetTimeEventObj(this,timer_heartbeat);
 		timer_update_.SetTimeEventObj(this,timer_update);
 	}
 
-	virtual ~myserver() {
+	virtual ~testserver() {
 
 	}
 
@@ -128,7 +128,7 @@ public:
 		return true;
 	}
 
-	virtual int ProcessPacket(NETInputPacket* pPacket, SocketHandler* pHandler, DWORD dwSessionID) {
+	virtual int onpacket(inpack1* pPacket, myhandler* pHandler, DWORD dwSessionID) {
 		const uint16 cmd = pPacket->GetCmdType();
 		switch (cmd)
 		{
@@ -157,19 +157,19 @@ public:
 		return 0;
 	}
 
-	virtual void OnConnect(SocketHandler* pHandler) {
-		log_debug("%s connected", pHandler->GetAddr().c_str());
+	virtual void onconnect(myhandler* pHandler) {
+		log_debug("%s connected", pHandler->getaddr().c_str());
 	}
 
-	virtual void OnDisconnect(SocketHandler* pHandler) {
-		log_debug("%s disconnected", pHandler->GetAddr().c_str());
+	virtual void ondisconnect(myhandler* pHandler) {
+		log_debug("%s disconnected", pHandler->getaddr().c_str());
 		user* u = get_user(pHandler);
 		if (u!=NULL) {
 			clear_user(u);
 		}
 	}
 
-	virtual int ProcessOnTimerOut(int Timerid) {
+	virtual int ontimeout(int Timerid) {
 		switch (Timerid)
 		{
 		case timer_heartbeat:
@@ -186,9 +186,9 @@ public:
 		return 0;
 	}
 
-	user* get_user(SocketHandler* pHandler) {
+	user* get_user(myhandler* pHandler) {
 		if (pHandler) {
-			void* ptr = pHandler->GetUserData();
+			void* ptr = pHandler->getuserdata();
 			if (ptr) {
 				return reinterpret_cast<user*>(ptr);
 			}
@@ -199,23 +199,23 @@ public:
 	int clear_user(user* u) {
 		// other cleanup
 		user_manager::ref().del_user(u->get_id());
-		u->get_sockethandler()->SetUserData(NULL);
+		u->get_sockethandler()->setuserdata(NULL);
 		delete u;
 		return 0;
 	}
 
-	user* check_relogin(const int uid, SocketHandler* pHandler) {
+	user* check_relogin(const int uid, myhandler* pHandler) {
 		user* u = user_manager::ref().get_user(uid);
 		if (u) {
 			// send here?
-			NETOutputPacket outpacket;
+			outpack1 outpacket;
 			outpacket.Begin(cmd_forced_logout);
 			outpacket.WriteInt(uid);
 			outpacket.WriteInt(1); // re login error code
 			outpacket.End();
 			u->sendmsg(&outpacket);
 
-			SocketHandler* pHandler_old = u->get_sockethandler();
+			myhandler* pHandler_old = u->get_sockethandler();
 			if (pHandler == pHandler_old) {
 				log_error("repeat login msg, uid:%d",u->get_id());
 				return u;
@@ -226,7 +226,7 @@ public:
 
 			if (pHandler_old != NULL) {
 				// parent method
-				DisConnect(pHandler_old);
+				disconnect(pHandler_old);
 			}
 
 			return NULL;
@@ -234,7 +234,7 @@ public:
 		return u;
 	}
 
-	user* login(int uid, SocketHandler* ph) {
+	user* login(int uid, myhandler* ph) {
 		user* u = new user(uid,ph);
 		if (u) {
 			if (!u->init()) {
@@ -243,44 +243,44 @@ public:
 				return NULL;
 			}
 			user_manager::ref().add_user(u);
-			ph->SetUserData(u);
+			ph->setuserdata(u);
 		}
 		return u;
 	}
 
-	int handle_login(NETInputPacket* packet, SocketHandler* pHandler) {
-		log_debug("%s login", pHandler->GetAddr().c_str());
-		if (pHandler->GetUserData()) { return -1; }
+	int handle_login(inpack1* packet, myhandler* pHandler) {
+		log_debug("%s login", pHandler->getaddr().c_str());
+		if (pHandler->getuserdata()) { return -1; }
 		const int uid = packet->ReadInt();
 		// any other fields?
 		user* u = check_relogin(uid, pHandler);
 		if (u == NULL) {
 			if ((u = login(uid, pHandler)) == NULL) {
-				NETOutputPacket outp;
+				outpack1 outp;
 				outp.Begin(cmd_login);
 				outp.WriteInt(-1); // init failure
 				outp.End();
-				pHandler->Send(&outp);
+				pHandler->send_(&outp);
 				return -1;
 			}
 		} else {
 			return -1;
 		}
-		NETOutputPacket outp;
+		outpack1 outp;
 		outp.Begin(cmd_login);
 		outp.WriteInt(0); // success
 		// any other fields?
 		outp.End();
-		pHandler->Send(&outp);
+		pHandler->send_(&outp);
 		return 0;
 	}
 
-	int handle_sysbroadcast(NETInputPacket* packet, SocketHandler* pHandler) {
-		log_debug("%s sysboradcast", pHandler->GetAddr().c_str());
+	int handle_sysbroadcast(inpack1* packet, myhandler* pHandler) {
+		log_debug("%s sysboradcast", pHandler->getaddr().c_str());
 		if (packet->ReadString() == ANONYMOUS_KEY) {
 			const int btype = packet->ReadInt();
 			const std::string bcontent = packet->ReadString();
-			NETOutputPacket outp;
+			outpack1 outp;
 			outp.Begin(cmd_sysbroadcast);
 			outp.WriteInt(btype);
 			outp.WriteString(bcontent);
@@ -291,8 +291,8 @@ public:
 		return -1;
 	}
 
-	int handle_updatecfg(NETInputPacket* packet, SocketHandler* pHandler) {
-		log_debug("%s updatecfg", pHandler->GetAddr().c_str());
+	int handle_updatecfg(inpack1* packet, myhandler* pHandler) {
+		log_debug("%s updatecfg", pHandler->getaddr().c_str());
 		if (packet->ReadString() == ANONYMOUS_KEY) {
 			// update...
 			return 0;
@@ -300,11 +300,11 @@ public:
 		return -1;
 	}
 
-	int handle_sayhello(user* u, NETInputPacket* packet) {
+	int handle_sayhello(user* u, inpack1* packet) {
 		int to = packet->ReadInt();
 		std::string content = packet->ReadString();
 		log_debug("user %d say %s to %d", u->get_id(), content.c_str(), to);
-		NETOutputPacket outp;
+		outpack1 outp;
 		outp.Begin(cmd_sayhello);
 		outp.WriteInt(u->get_id());
 		outp.WriteString(content);
@@ -326,11 +326,11 @@ public:
 		for (unsigned i=0; i<noresponse_users.size(); ++i) {
 			user* u = noresponse_users[i];
 			if (u) {
-				SocketHandler* sh = u->get_sockethandler();
+				myhandler* sh = u->get_sockethandler();
 				clear_user(u);
 				if (sh) {
 					// make sure it is safe later
-					DisConnect(sh);
+					disconnect(sh);
 				}
 			}
 		}
@@ -347,10 +347,10 @@ private:
 	TimerEvent timer_update_;
 };
 
-myserver* global_myserver() {
-	static myserver* s = NULL;
+testserver* global_myserver() {
+	static testserver* s = NULL;
 	if (s == NULL) {
-		s = new myserver();
+		s = new testserver();
 	}
 	return s;
 }
@@ -362,7 +362,7 @@ int main(int argc, char** argv) {
 	init_log("Log", "./");
 	set_log_level(7);
 
-	if (global_myserver()->InitSocket(9999) == false)
+	if (global_myserver()->initsock(9999) == false)
 	{
 		log_error("cannot init socket 99999");
 		return -1;
@@ -374,7 +374,7 @@ int main(int argc, char** argv) {
 		return -2;
 	}
 
-	global_myserver()->Run();
+	global_myserver()->run();
 
 	//global_myserver()->ShutDown();
 

@@ -8,7 +8,7 @@ class TimerOutEvent
 public:
     TimerOutEvent(){}
     virtual ~TimerOutEvent(){}
-	virtual int ProcessOnTimerOut(int Timerid)=0;
+	virtual int ontimeout(int Timerid)=0;
 };
 
 

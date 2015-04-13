@@ -10,7 +10,7 @@ connector::~connector()
 {
 }
 
-bool connector::open(TcpServer* pServer)
+bool connector::open(tcpserver* pServer)
 {
 	if(pServer == NULL)
 		return false;
@@ -18,7 +18,7 @@ bool connector::open(TcpServer* pServer)
 	return true;
 }
 
-bool connector::connect(TcpHandler* pHandler, const string& strAddr, int port)
+bool connector::connect(tcphandler* pHandler, const string& strAddr, int port)
 {
 	int sock_fd = socketops::myinit();
 	if(pHandler == NULL || sock_fd < 0)
@@ -40,14 +40,14 @@ bool connector::connect(TcpHandler* pHandler, const string& strAddr, int port)
             socketops::myclose(sock_fd);
             return false;
         }
-        pHandler->SetFd(sock_fd);
+        pHandler->setfd(sock_fd);
 		return reg(pHandler);			
 	}
 	socketops::myclose(sock_fd);	
 	return false;
 }
 
-bool connector::reg(TcpHandler* pHandler)
+bool connector::reg(tcphandler* pHandler)
 {
 	if(m_pNetServer == NULL)
 		return false;
