@@ -1,8 +1,6 @@
 #ifndef PACK1_HEADER
 #define PACK1_HEADER
 
-//#include "define.h"
-//#include "log.h"
 #include <time.h>
 #include <assert.h>
 #include <memory>
