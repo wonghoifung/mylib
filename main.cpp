@@ -50,7 +50,7 @@ public:
 	myhandler* get_sockethandler() { return sockethandler_; }
 	void sendmsg(outpack1* outp) {
 		if (sockethandler_) {
-			sockethandler_->send_(outp);
+			sockethandler_->sendpack(outp);
 		}
 	}
 private:
@@ -110,12 +110,12 @@ private:
 	std::map<int,user*> users_;
 };
 
-class testserver : public myserver, public TimerOutEvent, boost::noncopyable
+class testserver : public myserver, public timerhandler, boost::noncopyable
 {
 public:
 	testserver() {
-		timer_heartbeat_.SetTimeEventObj(this,timer_heartbeat);
-		timer_update_.SetTimeEventObj(this,timer_update);
+		timer_heartbeat_.settimerhandler(this,timer_heartbeat);
+		timer_update_.settimerhandler(this,timer_update);
 	}
 
 	virtual ~testserver() {
@@ -123,13 +123,13 @@ public:
 	}
 
 	bool init() {
-		timer_heartbeat_.StartTimer(interval_heartbeat);
-		timer_update_.StartTimer(interval_update);
+		timer_heartbeat_.starttimer(interval_heartbeat);
+		timer_update_.starttimer(interval_update);
 		return true;
 	}
 
-	virtual int onpacket(inpack1* pPacket, myhandler* pHandler, DWORD dwSessionID) {
-		const uint16 cmd = pPacket->GetCmdType();
+	virtual int onpacket(inpack1* pPacket, myhandler* pHandler, unsigned long dwSessionID) {
+		const uint16 cmd = pPacket->getcmd();
 		switch (cmd)
 		{
 		case cmd_login:
@@ -174,11 +174,11 @@ public:
 		{
 		case timer_heartbeat:
 			handle_timer_heartbeat();
-			timer_heartbeat_.StartTimer(interval_heartbeat);
+			timer_heartbeat_.starttimer(interval_heartbeat);
 			break;
 		case timer_update:
 			handle_timer_update();
-			timer_update_.StartTimer(interval_update);
+			timer_update_.starttimer(interval_update);
 			break;
 		default:
 			break;
@@ -209,10 +209,10 @@ public:
 		if (u) {
 			// send here?
 			outpack1 outpacket;
-			outpacket.Begin(cmd_forced_logout);
-			outpacket.WriteInt(uid);
-			outpacket.WriteInt(1); // re login error code
-			outpacket.End();
+			outpacket.begin(cmd_forced_logout);
+			outpacket.writeint(uid);
+			outpacket.writeint(1); // re login error code
+			outpacket.end();
 			u->sendmsg(&outpacket);
 
 			myhandler* pHandler_old = u->get_sockethandler();
@@ -251,40 +251,40 @@ public:
 	int handle_login(inpack1* packet, myhandler* pHandler) {
 		log_debug("%s login", pHandler->getaddr().c_str());
 		if (pHandler->getuserdata()) { return -1; }
-		const int uid = packet->ReadInt();
+		const int uid = packet->readint();
 		// any other fields?
 		user* u = check_relogin(uid, pHandler);
 		if (u == NULL) {
 			if ((u = login(uid, pHandler)) == NULL) {
 				outpack1 outp;
-				outp.Begin(cmd_login);
-				outp.WriteInt(-1); // init failure
-				outp.End();
-				pHandler->send_(&outp);
+				outp.begin(cmd_login);
+				outp.writeint(-1); // init failure
+				outp.end();
+				pHandler->sendpack(&outp);
 				return -1;
 			}
 		} else {
 			return -1;
 		}
 		outpack1 outp;
-		outp.Begin(cmd_login);
-		outp.WriteInt(0); // success
+		outp.begin(cmd_login);
+		outp.writeint(0); // success
 		// any other fields?
-		outp.End();
-		pHandler->send_(&outp);
+		outp.end();
+		pHandler->sendpack(&outp);
 		return 0;
 	}
 
 	int handle_sysbroadcast(inpack1* packet, myhandler* pHandler) {
 		log_debug("%s sysboradcast", pHandler->getaddr().c_str());
-		if (packet->ReadString() == ANONYMOUS_KEY) {
-			const int btype = packet->ReadInt();
-			const std::string bcontent = packet->ReadString();
+		if (packet->readstring() == ANONYMOUS_KEY) {
+			const int btype = packet->readint();
+			const std::string bcontent = packet->readstring();
 			outpack1 outp;
-			outp.Begin(cmd_sysbroadcast);
-			outp.WriteInt(btype);
-			outp.WriteString(bcontent);
-			outp.End();
+			outp.begin(cmd_sysbroadcast);
+			outp.writeint(btype);
+			outp.writestring(bcontent);
+			outp.end();
 			user_manager::ref().sendtoall(&outp);
 			return 0;
 		}
@@ -293,7 +293,7 @@ public:
 
 	int handle_updatecfg(inpack1* packet, myhandler* pHandler) {
 		log_debug("%s updatecfg", pHandler->getaddr().c_str());
-		if (packet->ReadString() == ANONYMOUS_KEY) {
+		if (packet->readstring() == ANONYMOUS_KEY) {
 			// update...
 			return 0;
 		}
@@ -301,14 +301,14 @@ public:
 	}
 
 	int handle_sayhello(user* u, inpack1* packet) {
-		int to = packet->ReadInt();
-		std::string content = packet->ReadString();
+		int to = packet->readint();
+		std::string content = packet->readstring();
 		log_debug("user %d say %s to %d", u->get_id(), content.c_str(), to);
 		outpack1 outp;
-		outp.Begin(cmd_sayhello);
-		outp.WriteInt(u->get_id());
-		outp.WriteString(content);
-		outp.End();
+		outp.begin(cmd_sayhello);
+		outp.writeint(u->get_id());
+		outp.writestring(content);
+		outp.end();
 		u->sendmsg(&outp);
 		return 0;
 	}
@@ -343,8 +343,8 @@ public:
 	}
 
 private:
-	TimerEvent timer_heartbeat_;
-	TimerEvent timer_update_;
+	timerwrapper timer_heartbeat_;
+	timerwrapper timer_update_;
 };
 
 testserver* global_myserver() {

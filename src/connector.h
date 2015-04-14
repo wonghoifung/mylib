@@ -12,7 +12,7 @@ public:
 	connector();
 	virtual ~connector();
 	bool open(tcpserver* pServer);
-	bool connect(tcphandler* pHandler, const string& strAddr, int port);
+	bool connect(tcphandler* pHandler, const std::string& strAddr, int port);
 protected:
 	bool reg(tcphandler* pHandler);	
 	tcpserver*	m_pNetServer;

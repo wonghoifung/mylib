@@ -1,17 +1,15 @@
+#ifndef TIMERHANDLER_HEADER
+#define TIMERHANDLER_HEADER
 
-#ifndef TIMEROUTEVENT_H__
-#define TIMEROUTEVENT_H__
-
-// 定时器回调接口
-class TimerOutEvent
+class timerhandler
 {
 public:
-    TimerOutEvent(){}
-    virtual ~TimerOutEvent(){}
+    timerhandler(){}
+    virtual ~timerhandler(){}
 	virtual int ontimeout(int Timerid)=0;
 };
 
 
-#endif //TIMEROUTEVENT_H__
+#endif 
 
 

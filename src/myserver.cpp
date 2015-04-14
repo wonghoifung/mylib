@@ -1,70 +1,64 @@
 #include "myserver.h"
 #include "socketops.h"
+#include <stdarg.h>
 
-using namespace std;
-
-#ifndef WIN32
-	#include <stdarg.h>
-#endif
-
-myserver::myserver(void)
-:tcpserver()
+myserver::myserver(void):tcpserver()
 {
-	m_nMaxID = 0;
+	maxid_ = 0;
 }
 
 myserver::~myserver(void)
 {
 }
-// 继承至ICHAT_TCP_Server, 创建新HANDLER时用
-tcphandler * myserver::createhandler(void)
+
+tcphandler* myserver::createhandler(void)
 {
-	myhandler *pNewHandler = NULL;
+	myhandler* pNewHandler = NULL;
     int nHandlerID = gethid();
 	pNewHandler = new myhandler(nHandlerID);
 	return pNewHandler;
 }
-void  myserver::onconnect(myhandler *pHandler )
+
+void myserver::onconnect(myhandler* pHandler)
 {
     int id = pHandler->gethandlerid();
-    if(m_HandlerMap.find(id) == m_HandlerMap.end())
+    if(myhandlers_.find(id) == myhandlers_.end())
     {
-        m_HandlerMap.insert(map<int, myhandler*>::value_type(id,pHandler));
+		myhandlers_.insert(std::map<int, myhandler*>::value_type(id,pHandler));
     }
     else
     {
-        log_debug("myserver::ProcessConnected Error %d\r\n", pHandler->gethandlerid());
+		log_debug("myserver::onconnect error, hid:%d", pHandler->gethandlerid());
         assert(false);
     }
 }
-void  myserver::ondisconnect(myhandler *pHandler )
+
+void myserver::ondisconnect(myhandler* pHandler)
 {
     int id = pHandler->gethandlerid();
-    map<int, myhandler*>::iterator iter = m_HandlerMap.find(id);
-    if(iter != m_HandlerMap.end())
+    std::map<int, myhandler*>::iterator iter = myhandlers_.find(id);
+    if(iter != myhandlers_.end())
     {
-        m_HandlerMap.erase(iter);
+        myhandlers_.erase(iter);
     }
     else
     {
-        log_debug("myserver::ProcessClose Error %d\r\n",pHandler->gethandlerid());
+		log_debug("myserver::ondisconnect error, hid:%d",pHandler->gethandlerid());
         assert(false);
     }
 }
-// 超时
-int myserver::ontimer(myhandler *pHandler)
+
+int myserver::ontimer(myhandler* pHandler)
 {
-    log_debug("connect 30s and no packet,disconnect \n");
+	log_debug("disconnect because it has been idle for a long time, hid:%d",pHandler->gethandlerid());
     disconnect(pHandler);
 	return 0;
 }
 
-// gethandler
-myhandler * myserver::gethandler(int nIndex)
+myhandler* myserver::gethandler(int nIndex)
 {
-	map<int, myhandler*>::iterator iter = m_HandlerMap.find(nIndex);
-
-	if(iter != m_HandlerMap.end())
+	std::map<int, myhandler*>::iterator iter = myhandlers_.find(nIndex);
+	if(iter != myhandlers_.end())
 	{
 		return iter->second;
 	}
@@ -73,10 +67,10 @@ myhandler * myserver::gethandler(int nIndex)
 
 int myserver::gethid(void)
 {
-    ++m_nMaxID;
-    while(m_HandlerMap.find(m_nMaxID) != m_HandlerMap.end())
+    ++maxid_;
+    while(myhandlers_.find(maxid_) != myhandlers_.end())
     {
-        ++m_nMaxID;
+        ++maxid_;
     }
-	return m_nMaxID;
+	return maxid_;
 }

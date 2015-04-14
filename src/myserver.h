@@ -1,11 +1,10 @@
-#pragma once
+#ifndef MYSERVER_HEADER
+#define MYSERVER_HEADER
 
 #include "tcpserver.h"
 #include "myhandler.h"
 #include "timerwrapper.h"
 #include <map>
-
-using namespace std;
 
 class myserver : public tcpserver
 {
@@ -16,12 +15,14 @@ public:
     virtual void onconnect(myhandler* pHandler);
     virtual void ondisconnect(myhandler* pHandler);
 	virtual int ontimer(myhandler*);
-	virtual int onpacket(inpack1* pPacket, myhandler* pHandler, DWORD dwSessionID) = 0;
+	virtual int onpacket(inpack1* pPacket, myhandler* pHandler, unsigned long dwSessionID) = 0;
 	myhandler* gethandler(int nIndex);
 	int gethid(void);
 
 private:
-    int m_nMaxID;
-    map<int, myhandler*> m_HandlerMap;
+    int maxid_;
+	std::map<int, myhandler*> myhandlers_;
 };
+
+#endif
 

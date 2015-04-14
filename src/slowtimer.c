@@ -162,7 +162,7 @@ static inline int
 detach_slowtimer(stimer_t * timer)
 {
     if (!stimer_pending(timer)) {
-        errno = ENOENT; //链表中根本就不存在该项
+        errno = ENOENT; 
         return -1;
     }
     list_del(&timer->list);
@@ -292,10 +292,6 @@ EXPORT void stimer_cleanup(timer_base_t* base)
     free(base);
 }
 
-/**
- * 设置定时器
- * @param expires 过期时间，单位：微秒。注意是相对时间
- */
 EXPORT void stimer_set(stimer_t* timer, unsigned long expires, void (*fn) (void*), void* ctx)
 {
 	timer->list.next = timer->list.prev = NULL;

@@ -112,7 +112,7 @@ bool tcpserver::run()
 			}
 			else if( epollevarr_[i].events & EPOLLOUT )
 			{
-				if( s->handle_output() == -1 )
+				if( s->handle_write() == -1 )
 				{
 					handle_close(s);
 					continue;

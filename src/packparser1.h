@@ -3,7 +3,6 @@
 
 #include <cstddef>
 
-using namespace std;
 class inpack1;
 class tcphandler;
 
@@ -13,18 +12,14 @@ protected:
 	ipackparser() {};
 
 public:
-	ipackparser(tcphandler * pHandler):m_pHandler(pHandler) {};
-
-	virtual ~ipackparser() {};
-
-public:
-	virtual int ParsePacket(const char * , const size_t ) = 0;
-
-	static ipackparser * CreateObject(tcphandler * pObject);
+	ipackparser(tcphandler* pHandler):handler_(pHandler) {}
+	virtual ~ipackparser() {}
+	virtual int parsepack(const char* , const size_t ) = 0;
+	static ipackparser* createparser(tcphandler* pObject);
 
 protected:
-	tcphandler* m_pHandler;
+	tcphandler* handler_;
 };
 
-#endif //_ICHAT_PACKPARSER_H_
+#endif 
 

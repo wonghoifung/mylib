@@ -1,84 +1,80 @@
-
 #include <stdio.h>
+#include <time.h>
 #include "timerwrapper.h"
 #include "log.h"
-#include <time.h>
-// 回调函数
+
 void handle_timeout(void* ptr)
 {
-	TimerEvent* sh = (TimerEvent*)ptr;
-#ifdef WIN32
-	stop_timer(&sh->m_ev);			// 放在OnTimer前面，是为了防止在OnTimer里面StartTimer
-#endif
-	sh->OnTimer(sh->m_ev.time_id);
+	timerwrapper* sh = (timerwrapper*)ptr;
+	sh->ontimeout(sh->timeev_.time_id);
 }
 
-TimerEvent::TimerEvent(void)
-:m_bHaveStart(false)
-,m_timeout(0)
-,m_nId(0)
-,m_TimeEvent(0)
+timerwrapper::timerwrapper(void)
+:havestart_(false)
+,timeout_(0)
+,id_(0)
+,thandler_(0)
 {
-	m_ev.time_id	= 0;
-	m_ev.timer		= 0;
-	m_ev.ptr		= this;
-	m_ev.callback	= handle_timeout;
+	timeev_.time_id	= 0;
+	timeev_.timer = 0;
+	timeev_.ptr	= this;
+	timeev_.callback = handle_timeout;
 }
 
-TimerEvent::~TimerEvent(void)
+timerwrapper::~timerwrapper(void)
 {
-	StopTimer();
+	stoptimer();
 }
-// 开启定时器
-void TimerEvent::StartTimer(int sec, int usec)
+
+void timerwrapper::starttimer(int sec, int usec)
 {
-	if(m_bHaveStart)
-		StopTimer();
+	if(havestart_)
+		stoptimer();
     if(sec <= 0)
     {
-        log_error("the timer is error %d ",sec);
+		log_error("invalid argument sec:%d",sec);
         return;
     }
 
-	m_timeout = sec;
-	if(start_timer(sec, usec, &m_ev) < 0)
+	timeout_ = sec;
+	if(start_timer(sec, usec, &timeev_) < 0)
     {
-        log_error("start_timer fail \n");
+        log_error("start_timer failure");
         return;
     }
-	m_bHaveStart = true;
+	havestart_ = true;
 }
-// 停止定时器
-void TimerEvent::StopTimer()
-{
-	if(m_bHaveStart)
-		stop_timer(&m_ev);
-}
-// 重置定时器
-void TimerEvent::ResetTimer()
-{
-	StopTimer();
-	StartTimer(m_timeout);
-}
-// 设置定时器ID
-void TimerEvent::SetTimerId(int timer_id)
-{
-	m_ev.time_id = timer_id;
-}
-// 设置定时器回调对象
-void TimerEvent::SetTimeEventObj(TimerOutEvent * obj, int id)
-{
-	m_nId = id;
-	m_TimeEvent = obj;
-}
-// 定时器响应函数(允许重载)
-void TimerEvent::OnTimer(int timer_id)
-{
-	m_bHaveStart = false;
 
-	if(m_TimeEvent != 0)	
-		m_TimeEvent->ontimeout(m_nId);
+void timerwrapper::stoptimer()
+{
+	if(havestart_)
+		stop_timer(&timeev_);
+}
+
+void timerwrapper::resettimer()
+{
+	stoptimer();
+	starttimer(timeout_);
+}
+
+void timerwrapper::settimerid(int timer_id)
+{
+	timeev_.time_id = timer_id;
+}
+
+void timerwrapper::settimerhandler(timerhandler * obj, int id)
+{
+	id_ = id;
+	thandler_ = obj;
+}
+
+void timerwrapper::ontimeout(int timer_id)
+{
+	havestart_ = false;
+
+	if(thandler_ != 0)	
+		thandler_->ontimeout(id_);
     else
-        log_debug("Timeobj is null \n");  
+        log_debug("timerhandler not set");  
 }
 

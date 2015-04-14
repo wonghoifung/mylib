@@ -2,7 +2,6 @@
 #include <string.h>
 #include "llist.h"
 
-// 创建链表
 LLIST* llist_creat(void)
 {
 	LLIST* handle = NULL;
@@ -19,7 +18,7 @@ LLIST* llist_creat(void)
 
 	return handle;
 }
-//后插，插在链表的最后
+
 int llist_append(LLIST* handle, ELE* pELE)
 {
 	struct lnode* newnode = NULL;
@@ -45,7 +44,7 @@ int llist_append(LLIST* handle, ELE* pELE)
 
 	return 0;	
 }
-//前插,插在头结点的后面的第一个结点
+
 int llist_preappend(LLIST* handle, ELE* pELE)
 {
 	struct lnode* newnode = NULL;
@@ -72,12 +71,12 @@ int llist_preappend(LLIST* handle, ELE* pELE)
 
 	return 0;
 }
-// 链表节点数
+
 int llist_size(LLIST* handle)
 {
 	return handle->num;
 }
-// 清空链表
+
 void llist_destory(LLIST* handle)
 {
 	struct lnode* tmp = NULL, *next = NULL;
@@ -91,7 +90,6 @@ void llist_destory(LLIST* handle)
 	free(handle);
 }
 
-// 删除Key内容的节点
 int llist_delete(LLIST* handle, list_find_p find, void* key)
 {
 	struct lnode* tmp = NULL, *next = NULL;
@@ -109,13 +107,13 @@ int llist_delete(LLIST* handle, list_find_p find, void* key)
 			count += 1;
             handle->num -= 1;
 
-			break; // 提高效率，ygh
+			break; 
 		}
 	}
 
 	return count;
 }
-// 删除一个节点
+
 int  llist_delete_quick(LLIST* handle,struct lnode * pNode)
 {
 	if(handle == NULL || pNode == NULL)
@@ -129,14 +127,14 @@ int  llist_delete_quick(LLIST* handle,struct lnode * pNode)
 
 	return 1;
 }
-// 安全轮询链表
+
 void llist_travel(LLIST* handle, list_travel_p trav, void* arg)
 {
 	struct lnode* tmp = NULL;
 	struct lnode* tmp2= NULL;
 	for(tmp = handle->head.next; tmp != &handle->head;) 
 	{
-		tmp2 = tmp->next;	// 安全轮询 ygh
+		tmp2 = tmp->next;
 		trav(tmp->element, arg);
 		tmp = tmp2;
 	}

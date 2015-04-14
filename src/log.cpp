@@ -6,11 +6,9 @@
 #include <stdio.h>
 #include <errno.h>
 #include <sys/time.h>
+#include <unistd.h>
 
 #include "log.h"
-
-#ifndef WIN320
-#include <unistd.h>
 
 #define LOGSIZE         1 * 1024 * 1024
 #define MAX_PATH_LEN    256
@@ -181,7 +179,7 @@ static int access_log()
 	return fd;
 }
 
-void write_log (int level, const char *filename, const char *funcname, int lineno, const char *format, ...)
+void write_log(int level, const char* filename, const char* funcname, int lineno, const char* format, ...)
 {
     int savedErrNo = errno;
     int off = 0;
@@ -222,7 +220,7 @@ void write_log (int level, const char *filename, const char *funcname, int linen
     write(fd, buf, off);
 }
 
-static unsigned char* formatstr(unsigned char * s,int size)
+static unsigned char* formatstr(unsigned char* s,int size)
 {
 	int i=0;
 	for(;i<size;i++)
@@ -236,7 +234,7 @@ static unsigned char* formatstr(unsigned char * s,int size)
 	return s;
 }
 
-void write_hex (int level, const char *filename, const char *funcname, int lineno,const char *head, int size,char *str)
+void write_hex(int level, const char* filename, const char* funcname, int lineno, const char* head, int size, char* str)
 {
     if(level<=0)
     {
@@ -293,20 +291,4 @@ void write_hex (int level, const char *filename, const char *funcname, int linen
 	}
 }
 
-#else
-//windows版本直接打印到控制台
-void init_log (const char *app, const char *dir, int max_num, int max_size){}
-void set_log_level(int){}
-void write_log (int, const char*, const char *, int, const char *, ...) {}
-
-void TRACE(char* format, ...)
-{
-	va_list arg_ptr;
-	va_start(arg_ptr, format);
-	int nWrittenBytes = vfprintf(stderr, format, arg_ptr);
-	va_end(arg_ptr);
-}
-
-
-#endif
 

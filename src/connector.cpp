@@ -18,7 +18,7 @@ bool connector::open(tcpserver* pServer)
 	return true;
 }
 
-bool connector::connect(tcphandler* pHandler, const string& strAddr, int port)
+bool connector::connect(tcphandler* pHandler, const std::string& strAddr, int port)
 {
 	int sock_fd = socketops::myinit();
 	if(pHandler == NULL || sock_fd < 0)

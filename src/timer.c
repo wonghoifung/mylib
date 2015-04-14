@@ -3,29 +3,24 @@
 #include "timer.h"
 #include "llist.h"	
 
-#ifndef WIN32
-	#include "slowtimer.c"
-	#include "plex.h"
-	plex_t timer_plex;
-#endif 
+#include "slowtimer.c"
+#include "plex.h"
+plex_t timer_plex;
 
-#ifndef WIN32	//linux platform
-// 初始化定时器
 void init_timer()
 {
 	stimer_init();
 	plex_init(&timer_plex, sizeof(stimer_t));
 	run_timer();
 }
-// Linux定时器回调函数
+
 void on_timer(void* ctx)
 {
 	struct time_ev* ev = ctx;
-	//释放定时器
 	stop_timer(ev);	    
 	ev->callback(ev->ptr);
 }
-// 投递一个定时器
+
 int start_timer(int sec, int usec, struct time_ev* ev)
 {
 	void* timer = 0;
@@ -49,75 +44,20 @@ int start_timer(int sec, int usec, struct time_ev* ev)
 	ev->timer = timer;
 	return 0;
 }
-// 删除一个定时器
+
 int stop_timer(struct time_ev* ev)
 {
 	if (ev->timer) {
-		stimer_del(ev->timer);//无论是否成功，该定时器都不在链表中，故可以删除内存
+		stimer_del(ev->timer);
 		plex_free(&timer_plex, ev->timer);
 		ev->timer = NULL;
 	}
 	return 0;
 }
-// 轮询定时器
+
 void run_timer()
 {
 	stimer_collect();
 }
 
-#else	//win32 platform
-// 查找是否pELE 中含有 key
-int find(ELE* pELE, void* key)
-{
-    struct time_ev* ev1 = (struct time_ev*)key, *ev2 = (struct time_ev*)(pELE->k);
-
-    if(ev2 == ev1)
-		return 1;
-	else
-		return 0;
-}
-// 检测是否超时
-int travel(ELE* pELE, void* key)
-{
-	struct time_ev* ev = (struct time_ev*)(pELE->k);
-	(*pELE).i -= 1;
-	if((*pELE).i <= 0)
-	{
-		ev->callback(ev->ptr);
-	}
-		
-	return 0;
-}
-// 初始化定时器
-void init_timer(void)
-{
- 	if(lhandle)
- 		llist_destory(lhandle);
- 
- 	lhandle = llist_creat();
- 	find_p = find;
- 	travel_p = travel;
-}
-
-//注册定时器
-int  start_timer(int sec, int usec, struct time_ev* ev)
-{
-	ELE ele = {sec, usec, ev};
-	
-	return llist_append(lhandle, &ele);	
-}
-
-//删除定时器
-int  stop_timer(struct time_ev* ev)
-{
-	llist_delete(lhandle, find_p, ev);
-	return 0;
-}
-
-//检测超时
-void run_timer(void)
-{
-	llist_travel(lhandle, travel, NULL);
-}
-#endif // WIN32
 

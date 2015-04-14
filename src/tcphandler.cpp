@@ -1,78 +1,72 @@
-#include "tcphandler.h"
-#include "log.h"
-#include "socketops.h"
-
+#include <sys/types.h>
+#include <sys/socket.h>
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
 #include <time.h>
+
+#include "tcphandler.h"
+#include "log.h"
+#include "socketops.h"
 #include "tcpserver.h"
 
-#ifdef WIN32
-    #ifndef EWOULDBLOCK
-        #define EWOULDBLOCK             WSAEWOULDBLOCK
-    # endif /* !EWOULDBLOCK */
-#else
-	#include <sys/types.h>
-	#include <sys/socket.h>
-#endif // WIN32
-
 tcphandler::tcphandler()
-:TimerOutEvent()
-,m_sock_fd(0)
+:timerhandler()
+,sockfd_(0)
 ,fdindex_(0)
-,m_bfull(false)
+,full_(false)
 {
-    m_bNeedDel = false;
-	memset(m_pRecvBuffer,0,sizeof(m_pRecvBuffer));
-	m_pServer = NULL;
-    m_TcpTimer.SetTimeEventObj(this);
-
-    m_pSendLoopBuffer = new CLoopBuffer(MAX_LOOP_BUFFER_LEN);
+    willdel_ = false;
+	memset(recvbuf_,0,sizeof(recvbuf_));
+	tcpserver_ = NULL;
+    tcptimer_.settimerhandler(this);
+    sendloopbuf_ = new loopbuf(LOOP_BUFFER_SIZE);
 }
+
 tcphandler::~tcphandler()
 {
-	if(m_pSendLoopBuffer)
-		delete m_pSendLoopBuffer;
-	m_pSendLoopBuffer = NULL;
+	if(sendloopbuf_)
+		delete sendloopbuf_;
+	sendloopbuf_ = NULL;
 }
 
 void tcphandler::setfd(int sock_fd)
 {
-	m_sock_fd = sock_fd;
+	sockfd_ = sock_fd;
 }
-int tcphandler::getfd()const
+
+int tcphandler::getfd() const
 {
-	return m_sock_fd;
+	return sockfd_;
 }
 
 int tcphandler::handle_connected()
 {
 	return onconnected();
 }
+
 int tcphandler::handle_read()
 {
-    if(m_bfull)
+    if(full_)
         return -1;
 
-    const int buff_size = sizeof(m_pRecvBuffer);
+    const int buff_size = sizeof(recvbuf_);
     while(1) 
     {
-        int nRecv = recv(m_sock_fd,m_pRecvBuffer,buff_size,0);
+        int nRecv = recv(sockfd_,recvbuf_,buff_size,0);
         if(nRecv < 0)
         {
             if(EAGAIN == errno || EWOULDBLOCK == errno)
-            {
-                //此时连接可用，只是读不到数据，应该continue                			
+            {                			
                 return 0;
             }
             return -1;
         }
-        if(nRecv == 0)/* 无法感知网络断开，需要配置心跳包或KEEPALIVE，建议用前者 */
+        if(nRecv == 0)
         {
-            return -1;/* 忘记close会导致 LT 模式下 CPU 100% */ 
+            return -1;
         }
-        int ret = onparser(m_pRecvBuffer, nRecv);
+        int ret = onparser(recvbuf_, nRecv);
         if(ret != 0)
             return -1;
         if(nRecv < buff_size)
@@ -81,66 +75,66 @@ int tcphandler::handle_read()
     return -1;
 }
 
-int tcphandler::handle_output()
+int tcphandler::handle_write()
 {
     if(!writable())
         return 0;
-    if(m_bfull)
+    if(full_)
         return -1;
 
     int nPeekLen = 0;
     int nHaveSendLen = 0;
     do 
     {
-        nPeekLen = m_pSendLoopBuffer->Peek(m_pTmpSendBuffer,sizeof(m_pTmpSendBuffer));
-        nHaveSendLen = socketops::mysend(getfd(),m_pTmpSendBuffer, nPeekLen);
+        nPeekLen = sendloopbuf_->peek(sendbuf_,sizeof(sendbuf_));
+        nHaveSendLen = socketops::mysend(getfd(),sendbuf_, nPeekLen);
 
-        //send_ data block
+        //sendpack data block
         if( nHaveSendLen < 0 ) 
         {
             if(errno != EWOULDBLOCK && errno != EINTR)
             {
-                m_pSendLoopBuffer->Erase(nPeekLen);            
+                sendloopbuf_->erase(nPeekLen);            
                 return -1;
             }
             return 0;
         }
         else
         {
-            m_pSendLoopBuffer->Erase(nHaveSendLen);
+            sendloopbuf_->erase(nHaveSendLen);
         }
-     }while (nHaveSendLen>0 && m_pSendLoopBuffer->DataCount()>0);
+     }while (nHaveSendLen>0 && sendloopbuf_->datacount()>0);
 
    return 0;
 }
 
 int tcphandler::handle_close()
 {
-	m_TcpTimer.StopTimer();
+	tcptimer_.stoptimer();
 	onclose();
 	return 0;
 }
 
-int tcphandler::send_(const char *buf, int nLen)
+int tcphandler::sendpack(const char* buf, int nLen)
 {
-    if( nLen > (int)m_pSendLoopBuffer->FreeCount())
+    if(nLen > (int)sendloopbuf_->freecount())
     {
-        log_debug("SendLoopBuff 已经撑爆 ！！！！\n");
-        m_bfull = true;
+        log_debug("sendloopbuf_ is full");
+        full_ = true;
         return -1;
     }
     else        
-	    m_pSendLoopBuffer->Put((char *)buf, nLen);
-    handle_output();   
+	    sendloopbuf_->put((char *)buf, nLen);
+    handle_write();   
 
     if(writable())
-        m_pServer->want_to_write(this);
+        tcpserver_->want_to_write(this);
 
 	return 0;
 }
 bool tcphandler::writable()
 {
-    return ( m_pSendLoopBuffer->DataCount()>0 ) ? true : false;
+    return ( sendloopbuf_->datacount()>0 ) ? true : false;
 }
 
 

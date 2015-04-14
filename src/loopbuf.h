@@ -1,35 +1,35 @@
-#ifndef AFX_LOOPBUFFER1_H__C1CEB05C_7A47_40FA_809E_C00D9922AD76__INCLUDED_
-#define AFX_LOOPBUFFER1_H__C1CEB05C_7A47_40FA_809E_C00D9922AD76__INCLUDED_
+#ifndef LOOPBUF_HEADER
+#define LOOPBUF_HEADER
 
 #include <stdlib.h>
 #include <string.h>
 #include "define.h"
 
-//循环缓冲区
-class CLoopBuffer  
+class loopbuf  
 {
 public:
 	char* buf_;
-	char* wptr_; //写指针
-	char* rptr_; //读指针
-	char* hptr_; //缓冲区的头指针
-	char* tptr_; //缓冲区的尾指针
-	DWORD count_;
+	char* wptr_; 
+	char* rptr_; 
+	char* hptr_; 
+	char* tptr_; 
+	unsigned long count_;
+
 public:
-	CLoopBuffer();
-	CLoopBuffer(DWORD bufsize);
-	virtual ~CLoopBuffer();
-	void InitMember();
-	void Init(DWORD bufsize);
-	void Reset();
-	DWORD Put(char* buf, DWORD size);
-	DWORD Get(char* buf, DWORD size);
-	DWORD Peek(char* buf, DWORD size);
-	DWORD Erase(DWORD size);
-	DWORD Count(); 
-	DWORD FreeCount();
-	DWORD DataCount();	
+	loopbuf();
+	loopbuf(unsigned long bufsize);
+	virtual ~loopbuf();
+	void init();
+	void init(unsigned long bufsize);
+	void reset();
+	unsigned long put(char* buf, unsigned long size);
+	unsigned long get(char* buf, unsigned long size);
+	unsigned long peek(char* buf, unsigned long size);
+	unsigned long erase(unsigned long size);
+	unsigned long count(); 
+	unsigned long freecount();
+	unsigned long datacount();	
 };
 
-#endif // !defined(AFX_LOOPBUFFER1_H__C1CEB05C_7A47_40FA_809E_C00D9922AD76__INCLUDED_)
+#endif 
 

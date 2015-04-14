@@ -1,21 +1,17 @@
-
-#ifdef WIN32
-#include <Windows.h>
-#endif
-
 #include "loopbuf.h"
 
- //构造和析构
-CLoopBuffer::CLoopBuffer()
+loopbuf::loopbuf()
 {
-	InitMember();
+	init();
 }
-CLoopBuffer::CLoopBuffer(DWORD bufsize) 
+
+loopbuf::loopbuf(unsigned long bufsize) 
 {
-	InitMember();
-	Init(bufsize); 
+	init();
+	init(bufsize); 
 }
-CLoopBuffer::~CLoopBuffer() 
+
+loopbuf::~loopbuf() 
 {
 	if (buf_) 
 	{
@@ -23,7 +19,8 @@ CLoopBuffer::~CLoopBuffer()
 		buf_ = 0;
 	}
 }
-void CLoopBuffer::InitMember()
+
+void loopbuf::init()
 {
 	buf_ = 0;	
 	wptr_ = 0;
@@ -32,8 +29,8 @@ void CLoopBuffer::InitMember()
 	tptr_ = 0;
 	count_ = 0;
 }
-//初始化内存缓冲区大小和重置
-void CLoopBuffer::Init(DWORD bufsize)
+
+void loopbuf::init(unsigned long bufsize)
 {		
 	bufsize++;
 	buf_ = (char*)malloc(bufsize);
@@ -43,19 +40,18 @@ void CLoopBuffer::Init(DWORD bufsize)
 	wptr_ = rptr_ = hptr_;
 	count_ = bufsize;
 }
-void CLoopBuffer::Reset()
+
+void loopbuf::reset()
 {
 	hptr_ = buf_;
 	tptr_ = hptr_ + count_;
 	wptr_ = rptr_ = hptr_;
 }
 
-//数据操作：Put, Get, Peek, Erase
-//改变wptr_
-DWORD CLoopBuffer::Put(char* buf, DWORD size)
+unsigned long loopbuf::put(char* buf, unsigned long size)
 {
-	char* readptr	= rptr_;
-	DWORD part	= tptr_ - wptr_;
+	char* readptr = rptr_;
+	unsigned long part	= tptr_ - wptr_;
 
 	if (wptr_ >= readptr)
 	{
@@ -70,7 +66,7 @@ DWORD CLoopBuffer::Put(char* buf, DWORD size)
 			memcpy(wptr_, buf, part);
 			buf += part;
 			size -= part;
-			if (size > DWORD(rptr_ - hptr_ - 1))
+			if (size > (unsigned long)(rptr_ - hptr_ - 1))
 			{
 				size = rptr_ - hptr_ - 1;
 			}
@@ -81,7 +77,7 @@ DWORD CLoopBuffer::Put(char* buf, DWORD size)
 	}
 	else 
 	{
-		if (size > DWORD(readptr - wptr_ - 1))
+		if (size > (unsigned long)(readptr - wptr_ - 1))
 		{
 			size = readptr - wptr_ - 1;
 		}
@@ -91,15 +87,14 @@ DWORD CLoopBuffer::Put(char* buf, DWORD size)
 	}
 }
 
-//会改变rptr_
-DWORD CLoopBuffer::Get(char* buf, DWORD size) 
+unsigned long loopbuf::get(char* buf, unsigned long size) 
 {
 	char* writeptr	= wptr_;
-	DWORD part	= tptr_ - rptr_;
+	unsigned long part	= tptr_ - rptr_;
 
 	if (writeptr >= rptr_)
 	{
-		if (size > DWORD(writeptr - rptr_))
+		if (size > (unsigned long)(writeptr - rptr_))
 		{
 			size = writeptr - rptr_;
 		}
@@ -120,7 +115,7 @@ DWORD CLoopBuffer::Get(char* buf, DWORD size)
 			memcpy(buf, rptr_, part);
 			buf += part;
 			size -= part;
-			if (size > DWORD(writeptr - hptr_))
+			if (size > (unsigned long)(writeptr - hptr_))
 			{
 				size = writeptr - hptr_;
 			}
@@ -130,14 +125,15 @@ DWORD CLoopBuffer::Get(char* buf, DWORD size)
 		}
 	}
 }
-DWORD CLoopBuffer::Peek(char* buf, DWORD size)
+
+unsigned long loopbuf::peek(char* buf, unsigned long size)
 {
 	char* writeptr	= wptr_;
-	DWORD part	= tptr_ - rptr_;
+	unsigned long part	= tptr_ - rptr_;
 
 	if (writeptr >= rptr_)
 	{
-		if (size > DWORD(writeptr - rptr_))
+		if (size > (unsigned long)(writeptr - rptr_))
 		{
 			size = writeptr - rptr_;
 		}
@@ -156,7 +152,7 @@ DWORD CLoopBuffer::Peek(char* buf, DWORD size)
 			memcpy(buf, rptr_, part);
 			buf += part;
 			size -= part;
-			if (size > DWORD(writeptr - hptr_))
+			if (size > (unsigned long)(writeptr - hptr_))
 			{
 				size = writeptr - hptr_;
 			}
@@ -166,14 +162,14 @@ DWORD CLoopBuffer::Peek(char* buf, DWORD size)
 	}
 }
 
-DWORD CLoopBuffer::Erase(DWORD size)
+unsigned long loopbuf::erase(unsigned long size)
 {
 	char* writeptr	= wptr_;
-	DWORD part	= tptr_ - rptr_;
+	unsigned long part	= tptr_ - rptr_;
 
 	if (writeptr >= rptr_)
 	{
-		if (size > DWORD(writeptr - rptr_))
+		if (size > (unsigned long)(writeptr - rptr_))
 		{
 			size = writeptr - rptr_;
 		}
@@ -190,7 +186,7 @@ DWORD CLoopBuffer::Erase(DWORD size)
 		else
 		{
 			size -= part;
-			if (size > DWORD(writeptr - hptr_))
+			if (size > (unsigned long)(writeptr - hptr_))
 				size = writeptr - hptr_;
 			rptr_ = hptr_ + size;
 			return part + size;
@@ -198,12 +194,12 @@ DWORD CLoopBuffer::Erase(DWORD size)
 	}
 }
 
-//空间大小，空闲空间大小，数据空间大小
-DWORD CLoopBuffer::Count() 
+unsigned long loopbuf::count() 
 { 
 	return count_ - 1; 
 }
-DWORD CLoopBuffer::FreeCount() 
+
+unsigned long loopbuf::freecount() 
 {
 	char* writeptr	= wptr_;
 	char* readptr	= rptr_;
@@ -217,7 +213,7 @@ DWORD CLoopBuffer::FreeCount()
 	}
 }
 
-DWORD CLoopBuffer::DataCount()
+unsigned long loopbuf::datacount()
 {
 	char* writeptr	= wptr_;
 	char* readptr	= rptr_;

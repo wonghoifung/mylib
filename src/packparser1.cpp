@@ -7,24 +7,21 @@ class packparser1 :  public ipackparser
 public:
 	packparser1(tcphandler * pHandler):ipackparser(pHandler)
 	{
-		m_pBuf = m_Packet.packet_buf();
-		m_version = inpack1::SERVER_PACKET_DEFAULT_VER;
-		m_subVersion = inpack1::SERVER_PACKET_DEFAULT_SUBVER;
+		buf_ = pack_.packet_buf();
+		version_ = inpack1::SERVER_PACKET_DEFAULT_VER;
+		subversion_ = inpack1::SERVER_PACKET_DEFAULT_SUBVER;
 		reset();
 	}
 
 	virtual ~packparser1(void){}
 
-	// 处理PACKET数据
-	int ParsePacket(const char *data, const size_t length)
+	int parsepack(const char *data, const size_t length)
 	{
-		//reset();
-
-		int ret = -1; //出错返回
+		int ret = -1; 
 		size_t ndx = 0;
-		while(ndx < length && m_nStatus != REQ_ERROR)//可能会同时来两个包 
+		while(ndx < length && hstate_ != REQ_ERROR) 
 		{
-			switch(m_nStatus)
+			switch(hstate_)
 			{
 			case REQ_REQUEST:
 			case REQ_HEADER:
@@ -33,103 +30,81 @@ public:
 				ret = parse_header();
 				if(ret != 0)
 				{
-					m_nStatus = REQ_ERROR;
+					hstate_ = REQ_ERROR;
 					break;
 				}else
-					m_nStatus = REQ_BODY;
+					hstate_ = REQ_BODY;
 			case REQ_BODY:
 				if(parse_body(data, length, ndx))
-					m_nStatus = REQ_DONE;
+					hstate_ = REQ_DONE;
 				break;
 			default:
                 {
-                    //log_debug("parse error state return -1 \n");
                     return -1;
                 }
 			}
-			if(m_nStatus == REQ_ERROR)
+			if(hstate_ == REQ_ERROR)
             {
-                //log_debug("parse state is REQ_ERROR \n");
                 reset();
             }
-			if(m_nStatus == REQ_DONE)
+			if(hstate_ == REQ_DONE)
 			{
-				m_pHandler->onpackcomplete(&m_Packet);
+				handler_->onpackcomplete(&pack_);
 				this->reset();
 			}
 		}
 
-		return 0; // return 0 to continue
+		return 0; 
 	}
+
 protected:
 	void reset(void)
 	{
-		m_nStatus = REQ_REQUEST;
-		m_nPacketPos = 0;
-		m_nBodyLen = 0;
-		m_Packet.Reset();//包完成复位
+		hstate_ = REQ_REQUEST;
+		packpos_ = 0;
+		bodylen_ = 0;
+		pack_.reset();
 	}
 
-public:
-	short m_version;
-	short m_subVersion;
-
 private:
-	// 当前处理状态
-	int m_nStatus; 
-	// PacketPos
-	size_t	m_nPacketPos;
-	// BODY长度
-	size_t m_nBodyLen;
-	// PacketBuffer 指针
-	char *m_pBuf;
-	// PacketBuffer
-	inpack1 m_Packet;
-	// 状态
-	enum REQSTATUS{	REQ_REQUEST=0, REQ_HEADER, REQ_BODY, REQ_DONE, REQ_PROCESS, REQ_ERROR };
-
-private:
-
-	// 读取Packet头数据
 	bool read_header(const char *data, const size_t length, size_t & ndx)
 	{
-		if (0 == ndx)  //腾讯服务器上有一个m_nPacketPos不为零的问题，会导致解包失败，socket关闭，这里先规避先
+		if (0 == ndx)
 		{
-			//RAW_LOG_ERROR("read_header, m_nPacketPos=%d", m_nPacketPos);
-			m_nPacketPos = 0;			
+			packpos_ = 0;			
 		}
 		
-		while(m_nPacketPos < inpack1::PACKET_HEADER_SIZE && ndx < length)//
+		while(packpos_ < inpack1::PACKET_HEADER_SIZE && ndx < length)//
 		{
-			m_pBuf[m_nPacketPos++] = data[ndx++];
+			buf_[packpos_++] = data[ndx++];
 		}
-		if(m_nPacketPos < inpack1::PACKET_HEADER_SIZE)
+		if(packpos_ < inpack1::PACKET_HEADER_SIZE)
 			return false;
 
 		return true;
 	}
-	// 解析Packet头信息
-	int parse_header(void) //0:成功 -1:包错误 -2:命令范围错误 -3:版本错误 -4:长度错误
+
+	int parse_header(void)
 	{
-		if(m_pBuf[0] != 'I' || m_pBuf[1] != 'C')
+		if(buf_[0] != 'I' || buf_[1] != 'C')
 			return -1;
 
-		short nCmdType = m_Packet.GetCmdType();
+		short nCmdType = pack_.getcmd();
 		if(nCmdType < 0 || nCmdType >= 32000)
 			return -2;
 
-		if(m_Packet.GetVersion() != m_version || m_Packet.GetSubVersion() != m_subVersion)
+		if(pack_.getversion() != version_ || pack_.getsubversion() != subversion_)
 			return -3;
 
-		m_nBodyLen = m_Packet.GetBodyLength();
-		if(m_nBodyLen < (inpack1::PACKET_BUFFER_SIZE - inpack1::PACKET_HEADER_SIZE))
+		bodylen_ = pack_.getbodylen();
+		if(bodylen_ < (inpack1::PACKET_BUFFER_SIZE - inpack1::PACKET_HEADER_SIZE))
 			return 0;
 		return -4;
 	}
-	// 解析BODY数据
+
 	bool parse_body(const char *data, const size_t length, size_t & ndx)
 	{
-		size_t nNeed = (m_nBodyLen + inpack1::PACKET_HEADER_SIZE) - m_nPacketPos;
+		size_t nNeed = (bodylen_ + inpack1::PACKET_HEADER_SIZE) - packpos_;
 		size_t nBuff = length - ndx;
 
 		if(nNeed <= 0)
@@ -138,20 +113,32 @@ private:
 			return false;
 
 		size_t nCopy = nBuff < nNeed ? nBuff : nNeed;
-		if(!m_Packet.WriteBody(data + ndx,  static_cast<int>(nCopy)))
+		if(!pack_.writebody(data + ndx,  static_cast<int>(nCopy)))
 			return false;
 
-		m_nPacketPos += nCopy;
+		packpos_ += nCopy;
 		ndx += nCopy;
 
-		if(m_nPacketPos < (m_nBodyLen + inpack1::PACKET_HEADER_SIZE))
+		if(packpos_ < (bodylen_ + inpack1::PACKET_HEADER_SIZE))
 			return false;
 
 		return true;
 	}
+
+public:
+	short version_;
+	short subversion_;
+
+private:
+	int hstate_; 
+	size_t	packpos_;
+	size_t bodylen_;
+	char* buf_;
+	inpack1 pack_;
+	enum REQSTATUS{	REQ_REQUEST=0, REQ_HEADER, REQ_BODY, REQ_DONE, REQ_PROCESS, REQ_ERROR };
 };
 
-ipackparser * ipackparser::CreateObject(tcphandler * pObject)
+ipackparser * ipackparser::createparser(tcphandler * pObject)
 {
 	return new packparser1(pObject);
 }
