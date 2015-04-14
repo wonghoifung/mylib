@@ -1,12 +1,11 @@
 #include "packparser1.h"
 #include "pack1.h"
-//#include "myhandler.h"
-#include "tcphandler.h"
+#include "myhandler.h"
 
 class packparser1 :  public ipackparser
 {
 public:
-	packparser1(tcphandler* pHandler):ipackparser(pHandler)
+	packparser1(tcphandler * pHandler):ipackparser(pHandler)
 	{
 		buf_ = pack_.packet_buf();
 		version_ = inpack1::SERVER_PACKET_DEFAULT_VER;
@@ -139,7 +138,7 @@ private:
 	enum REQSTATUS{	REQ_REQUEST=0, REQ_HEADER, REQ_BODY, REQ_DONE, REQ_PROCESS, REQ_ERROR };
 };
 
-ipackparser* ipackparser::createparser(tcphandler* pObject)
+ipackparser * ipackparser::createparser(tcphandler * pObject)
 {
 	return new packparser1(pObject);
 }
