@@ -10,5 +10,6 @@ then
     kill  -9 $pid
     #echo  done 
 fi
-nohup ./${bin}  &
+nohup ./${bin}  127.0.0.1  9999
+#nohup ./${bin}  127.0.0.1  9999&
                    

@@ -74,7 +74,7 @@ private:
 			packpos_ = 0;			
 		}
 		
-		while(packpos_ < inpack1::PACKET_HEADER_SIZE && ndx < length)
+		while(packpos_ < inpack1::PACKET_HEADER_SIZE && ndx < length)//
 		{
 			buf_[packpos_++] = data[ndx++];
 		}
