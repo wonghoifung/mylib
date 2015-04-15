@@ -8,14 +8,42 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <assert.h>
+#include <string.h>
 
 namespace socketops {
 
+	int set_nonblock_cloexec(int sockfd)
+	{
+		// non-block
+		int flags = ::fcntl(sockfd, F_GETFL, 0);
+		flags |= O_NONBLOCK;
+		if (::fcntl(sockfd, F_SETFL, flags)==-1)
+		{
+			printf("cannot set nonblock:%s\n",strerror(errno));
+			return -1;
+		}
+
+		// close-on-exec
+		flags = ::fcntl(sockfd, F_GETFD, 0);
+		flags |= FD_CLOEXEC;
+		if (::fcntl(sockfd, F_SETFD, flags)==-1)
+		{
+			printf("cannot set cloexec:%s\n",strerror(errno));
+			return -1;
+		}
+
+		return sockfd;
+	}
+
 	int mysocket_nonblock_()
 	{
-		int fd;
-		// TODO
-		return fd;
+		int sockfd = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+		if (sockfd < 0)
+		{
+			return -1;
+		}
+
+		return set_nonblock_cloexec(sockfd);
 	}
 
 	int mysocket_nonblock()
@@ -58,7 +86,11 @@ namespace socketops {
 	int myaccept(int sockfd, struct sockaddr_in* addr)
 	{
 		socklen_t addrlen = static_cast<socklen_t>(sizeof *addr);
-		int connfd = ::accept4(sockfd, sockaddr_cast(addr), &addrlen, SOCK_NONBLOCK | SOCK_CLOEXEC);
+
+		//int connfd = ::accept4(sockfd, sockaddr_cast(addr), &addrlen, SOCK_NONBLOCK | SOCK_CLOEXEC);
+		int connfd = ::accept(sockfd, sockaddr_cast(addr), &addrlen);
+		set_nonblock_cloexec(connfd);
+		
 		if (connfd < 0)
 		{
 			int savedErrno = errno;
@@ -131,7 +163,7 @@ namespace socketops {
 		assert(size >= INET_ADDRSTRLEN);
 		::inet_ntop(AF_INET, &addr.sin_addr, buf, static_cast<socklen_t>(size));
 		size_t end = ::strlen(buf);
-		uint16_t port = be16toh(addr.sin_port);
+		uint16_t port = ntohs(addr.sin_port);//be16toh(addr.sin_port); 
 		assert(size > end);
 		snprintf(buf+end, size-end, ":%u", port);
 	}
@@ -145,7 +177,7 @@ namespace socketops {
 	void fromipport(const char* ip, uint16_t port, struct sockaddr_in* addr)
 	{
 		addr->sin_family = AF_INET;
-		addr->sin_port = htobe16(port);
+		addr->sin_port = htons(port);//htobe16(port);
 		if (::inet_pton(AF_INET, ip, &addr->sin_addr) <= 0)
 		{
 			printf("inet_pton error\n");
