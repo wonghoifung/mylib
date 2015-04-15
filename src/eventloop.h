@@ -14,6 +14,8 @@ public:
 	eventloop();
 	~eventloop();
 	void loop();
+	void updateconn(connection* conn);
+	void removeconn(connection* conn);
 
 private:
 	bool looping_; 

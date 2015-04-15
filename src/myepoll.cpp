@@ -2,17 +2,21 @@
 #include "socketops.h"
 #include "common.h"
 #include "connection.h"
+#include "eventloop.h"
 
 #include <assert.h>
 #include <errno.h>
-//#include <poll.h>
 #include <sys/epoll.h>
 #include <sys/time.h>
 #include <sys/resource.h>
 
+#define NEWCONN -1
+#define ADDEDCONN 1
+#define DELETEDCONN 2
+
 #define MAX_DESCRIPTORS 100000
 
-myepoll::myepoll() : events_(16)
+myepoll::myepoll(eventloop* loop) : events_(16), ownerloop_(loop)
 {
 	struct rlimit rl;
 	int nfiles = MAX_DESCRIPTORS;
@@ -61,5 +65,81 @@ time_t myepoll::poll(int timeoutms, std::vector<connection*>* activeconns)
 		}
 	}
 	return now;
+}
+
+void myepoll::updateconn(connection* conn)
+{
+	const int index = conn->index();
+	if (index == NEWCONN || index == DELETEDCONN)
+	{
+		int fd = conn->fd();
+		if (index == NEWCONN)
+		{
+			assert(conns_.find(fd) == conns_.end());
+			conns_[fd] = conn;
+		}
+		else 
+		{
+			assert(conns_.find(fd) != conns_.end());
+			assert(conns_[fd] == conn);
+		}
+		conn->set_index(ADDEDCONN);
+		update(EPOLL_CTL_ADD, conn);
+	}
+	else
+	{
+		int fd = conn->fd();
+		(void)fd;
+		assert(conns_.find(fd) != conns_.end());
+		assert(conns_[fd] == conn);
+		assert(index == ADDEDCONN);
+		if (conn->isnoneevent())
+		{
+			update(EPOLL_CTL_DEL, conn);
+			conn->set_index(DELETEDCONN);
+		}
+		else
+		{
+			update(EPOLL_CTL_MOD, conn);
+		}
+	}
+}
+
+void myepoll::removeconn(connection* conn)
+{
+	int fd = conn->fd();
+	assert(conns_.find(fd) != conns_.end());
+	assert(conns_[fd] == conn);
+	assert(conn->isnoneevent());
+	int index = conn->index();
+	assert(index == ADDEDCONN || index == DELETEDCONN);
+	size_t n = conns_.erase(fd);
+	assert(n == 1);
+	if (index == ADDEDCONN)
+	{
+		update(EPOLL_CTL_DEL, conn);
+	}
+	conn->set_index(NEWCONN);
+}
+
+void myepoll::update(int operation, connection* conn)
+{
+	struct epoll_event event;
+	bzero(&event, sizeof event);
+	event.events = conn->events();
+	event.data.ptr = conn;
+	int fd = conn->fd();
+	if (::epoll_ctl(epollfd_, operation, fd, &event) < 0)
+	{
+		if (operation == EPOLL_CTL_DEL)
+		{
+			printf("epoll_ctl cannot del fd:%d\n",fd);
+		}
+		else
+		{
+			printf("epoll_ctl cannot op:%d fd:%d\n",operation,fd);
+			abort();
+		}
+	}
 }
 

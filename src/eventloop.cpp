@@ -4,7 +4,7 @@ eventloop::eventloop()
 :looping_(false),
  quit_(false),
  eventhandling_(false),
- poller_(new myepoll()),
+ poller_(new myepoll(this)),
  currentactiveconn_(NULL)
 {
 
@@ -35,5 +35,15 @@ void eventloop::loop()
 		eventhandling_ = false;
 	}
 	looping_ = false;
+}
+
+void eventloop::updateconn(connection* conn)
+{
+	poller_->updateconn(conn);
+}
+
+void eventloop::removeconn(connection* conn)
+{
+	poller_->removeconn(conn);
 }
 

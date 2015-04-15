@@ -37,6 +37,31 @@ namespace socketops {
 		return sockfd;
 	}
 
+	void set_reuseaddr(int sockfd, bool on)
+	{
+		int optval = on ? 1 : 0;
+		if (::setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &optval, static_cast<socklen_t>(sizeof optval))==-1)
+		{
+			printf("cannot set reuse:%s\n",strerror(errno));
+		}
+	}
+
+	void set_reuseport(int sockfd, bool on)
+	{
+#ifdef SO_REUSEPORT
+		int optval = on ? 1 : 0;
+		if (::setsockopt(sockfd, SOL_SOCKET, SO_REUSEPORT, &optval, static_cast<socklen_t>(sizeof optval))<0)
+		{
+			printf("SO_REUSEPORT failed\n");
+		}
+#else
+		if (on)
+		{
+			printf("SO_REUSEPORT is not supported\n");
+		}
+#endif
+	}
+
 	int set_nonblock_cloexec_(int sockfd)
 	{
 		return set_cloexec(set_nonblock(sockfd));
@@ -258,3 +283,31 @@ namespace socketops {
 	}
 
 }
+
+static __thread char resolvebuf[64 * 1024];
+bool netaddr::resolve(std::string hostname, netaddr* result)
+{
+	assert(result != NULL);
+	struct hostent hent;
+	struct hostent* he = NULL;
+	int herrno = 0;
+	bzero(&hent, sizeof(hent));
+
+	int ret = gethostbyname_r(hostname.c_str(), &hent, resolvebuf, sizeof resolvebuf, &he, &herrno);
+	if (ret == 0 && he != NULL)
+	{
+		assert(he->h_addrtype == AF_INET && he->h_length == sizeof(uint32_t));
+		result->addr_.sin_addr = *reinterpret_cast<struct in_addr*>(he->h_addr);
+		return true;
+	}
+	else
+	{
+		if (ret)
+		{
+			printf("gethostbyname_r error\n");
+		}
+		return false;
+	}
+}
+
+
