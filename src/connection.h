@@ -54,7 +54,10 @@ public:
 	void remove();
 
 	void handle_event(time_t receivetime);
-	int handle_read(time_t receivetime);
+	void handle_read(time_t receivetime);
+    void handle_write();
+    void handle_close();
+    void handle_error();
 
 	virtual int parsepack(const char* , const size_t);
 	virtual int onpackcomplete(inpack1*);

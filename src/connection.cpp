@@ -44,9 +44,9 @@ void connection::handle_event(time_t receivetime)
 	if (revents_&(EPOLLIN|EPOLLPRI))
 	{
 		if (get_islistenfd()) {
-			readcallback_(receivetime); 
+			if(readcallback_)readcallback_(receivetime);
 		}
-		else if (readcallback_) { 
+		else {
 			handle_read(receivetime);
 		}
 	}
@@ -57,28 +57,44 @@ void connection::handle_event(time_t receivetime)
 	}
 }
 
-int connection::handle_read(time_t receivetime)
+void connection::handle_read(time_t receivetime)
 {
 	if(bfull_) return -1;
 	const unsigned buff_size = sizeof(recvbuf_);
-	while(1)  {
-		int nRecv = socketops::myread(fd_,recvbuf_,buff_size);
-		if(nRecv < 0) {
-			if(EAGAIN == errno || EWOULDBLOCK == errno) {            			
-				return 0;
-			}
-			return -1;
-		}
-		if(nRecv == 0) {
-			return -1;
-		}
-		int ret = parsepack(recvbuf_, nRecv);
-		if(ret != 0)
-			return -1;
-		if(nRecv < (int)buff_size)
-			return 0;
-	} 
-	return -1;
+    
+    int nRecv = socketops::myread(fd_,recvbuf_,buff_size);
+        
+    if (nRecv > 0) {
+        int ret = parsepack(recvbuf_, nRecv);
+        if(ret != 0)
+            return -1;
+        if(nRecv < (int)buff_size)
+            return 0;
+    }
+    else if (nRecv == 0) {
+        handle_close();
+    }
+    else {
+        if(EAGAIN == errno || EWOULDBLOCK == errno) {
+            return;
+        }
+        handle_error();
+    }
+}
+
+void connection::handle_write()
+{
+    
+}
+
+void connection::handle_close()
+{
+    
+}
+
+void connection::handle_error()
+{
+    
 }
 
 int connection::parsepack(const char* buf, const size_t len)
