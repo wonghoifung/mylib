@@ -1,4 +1,5 @@
 #include "socketops.h"
+#include "common.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -12,27 +13,33 @@
 
 namespace socketops {
 
-	int set_nonblock_cloexec(int sockfd)
+	int set_nonblock(int sockfd)
 	{
-		// non-block
 		int flags = ::fcntl(sockfd, F_GETFL, 0);
 		flags |= O_NONBLOCK;
 		if (::fcntl(sockfd, F_SETFL, flags)==-1)
 		{
 			printf("cannot set nonblock:%s\n",strerror(errno));
-			return -1;
+			abort();
 		}
+		return sockfd;
+	}
 
-		// close-on-exec
-		flags = ::fcntl(sockfd, F_GETFD, 0);
+	int set_cloexec(int sockfd)
+	{
+		int flags = ::fcntl(sockfd, F_GETFD, 0);
 		flags |= FD_CLOEXEC;
 		if (::fcntl(sockfd, F_SETFD, flags)==-1)
 		{
 			printf("cannot set cloexec:%s\n",strerror(errno));
-			return -1;
+			abort();
 		}
-
 		return sockfd;
+	}
+
+	int set_nonblock_cloexec_(int sockfd)
+	{
+		return set_cloexec(set_nonblock(sockfd));
 	}
 
 	int mysocket_nonblock_()
@@ -42,8 +49,7 @@ namespace socketops {
 		{
 			return -1;
 		}
-
-		return set_nonblock_cloexec(sockfd);
+		return set_nonblock_cloexec_(sockfd);
 	}
 
 	int mysocket_nonblock()
@@ -89,7 +95,7 @@ namespace socketops {
 
 		//int connfd = ::accept4(sockfd, sockaddr_cast(addr), &addrlen, SOCK_NONBLOCK | SOCK_CLOEXEC);
 		int connfd = ::accept(sockfd, sockaddr_cast(addr), &addrlen);
-		set_nonblock_cloexec(connfd);
+		set_nonblock_cloexec_(connfd);
 		
 		if (connfd < 0)
 		{
@@ -197,11 +203,6 @@ namespace socketops {
 		{
 			return optval;
 		}
-	}
-
-	template<typename To, typename From>
-	inline To implicit_cast(From const &f) {
-		return f;
 	}
 
 	const struct sockaddr* sockaddr_cast(const struct sockaddr_in* addr)

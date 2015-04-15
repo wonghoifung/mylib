@@ -5,6 +5,8 @@
 
 namespace socketops
 {
+	int set_nonblock(int sockfd);
+	int set_cloexec(int sockfd);
 	int mysocket_nonblock();
 	int myconnect(int sockfd, const struct sockaddr_in& addr);
 	void mybind(int sockfd, const struct sockaddr_in& addr);
