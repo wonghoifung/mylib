@@ -8,13 +8,13 @@ class event_loop;
 class tcpserver : boost::noncopyable
 {
 public:
-	explicit tcpserver(event_loop* eloop);
-	~tcpserver();
-	int init(int listenport);
+    explicit tcpserver(event_loop* eloop);
+    ~tcpserver();
+    int init(int listenport);
 
 private:
-	int listenfd_;
-	event_loop* evloop_;
+    int listenfd_;
+    event_loop* evloop_;
 };
 
 #endif
