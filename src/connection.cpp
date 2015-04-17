@@ -24,7 +24,7 @@ sndloopbuf_(new loopbuf(LOOPBUF_SIZE))
 
 connection::~connection()
 {
-    if(parser1_) {
+    if (parser1_) {
         delete parser1_;
         parser1_ = NULL;
     }
