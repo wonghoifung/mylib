@@ -40,6 +40,7 @@ int connection::onpackcomplete(inpack1* pack)
     printf("cmd: %d\n", pack->getcmd());
     printf("int: %d\n", pack->readint());
     printf("str: %s\n", pack->readstring().c_str());
+    if (inpack1cb_) inpack1cb_(this, pack);
     return 0;
 }
 
@@ -71,8 +72,7 @@ int connection::socketwrite()
     if (!needtowritesocket()) {
         return 0;
     }
-    // TODO
-    //if(full_) return -1;
+    if(full_) return -1;
     int peeklen = 0;
     int havesentlen = 0;
     do {
@@ -80,7 +80,7 @@ int connection::socketwrite()
         havesentlen = ::send( fd_, sendbuf_, peeklen, 0 );
         if (havesentlen<0) {
             if(errno != EWOULDBLOCK && errno != EINTR) {
-                sndloopbuf_->erase(peeklen); // TODO
+                sndloopbuf_->erase(peeklen); 
                 return -1;
             }
             return 0;
@@ -99,20 +99,19 @@ bool connection::needtowritesocket()
 
 int connection::onconnected()
 {
-    // TODO
+    if (connectedcb_) connectedcb_(this);
     return 0;
 }
 
 int connection::onclosed()
 {
-    // TODO
+    if (closedcb_) closedcb_(this);
     return 0;
 }
 
 int connection::onread()
 {
-    // TODO
-    //if(full_) return -1;
+    if(full_) return -1;
 	
     const unsigned buff_size = sizeof recvbuf_;
     while(1) {

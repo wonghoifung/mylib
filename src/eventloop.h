@@ -13,11 +13,13 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include <sys/epoll.h>
-#include <set>
+#include <map>
 #include <boost/noncopyable.hpp>
 #include "pack1.h"
 #include "packparser1.h"
 #include "connection.h"
+
+class tcpserver;
 
 class event_loop : boost::noncopyable
 {
@@ -27,7 +29,7 @@ public:
     void init();
     void run();
 
-    bool addlistenfd(int fd);
+    bool addlistenfd(int fd, tcpserver* tcpsvr);
     void dellistenfd(int fd);
     bool islistenfd(int fd);
 
@@ -46,7 +48,7 @@ private:
     int fdcount_;
     uint32_t fdindex_; 
     epoll_event* epevents_;
-    std::set<int> listenfds_;
+    std::map<int,tcpserver*> listenfds_;
 };
 
 #endif

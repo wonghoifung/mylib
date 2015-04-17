@@ -2,6 +2,7 @@
 #define CONNECTION_HEADER
 
 #include <boost/noncopyable.hpp>
+#include <boost/function.hpp>
 
 #include "pack1.h"
 #include "packparser1.h"
@@ -10,6 +11,10 @@
 #define LOOPBUF_SIZE (64*1024)
 #define RECVBUF_SIZE (32*1024)
 #define SENDBUF_SIZE (32*1024)
+
+typedef boost::function<void(connection*,inpack1*)> inpack1callback;
+typedef boost::function<void(connection*)> connectedcallback;
+typedef boost::function<void(connection*)> closedcallback;
 
 class event_loop;
 
@@ -28,6 +33,9 @@ public:
     void setfd(int fd) {fd_=fd;}
     uint32_t getfdindex() {return fdindex_;}
     void setfdindex(uint32_t idx) {fdindex_=idx;}
+    void set_inpack1callback(inpack1callback cb) {inpack1cb_=cb;}
+    void set_connectedcallback(connectedcallback cb) {connectedcb_=cb;}
+    void set_closedcallback(closedcallback cb) {closedcb_=cb;}
 
     int onconnected();
     int onclosed();
@@ -37,7 +45,11 @@ public:
 private:
     int fd_;
     uint32_t fdindex_; 
+    
     ipackparser* parser1_;
+    inpack1callback inpack1cb_;
+    connectedcallback connectedcb_;
+    closedcallback closedcb_;
 
     event_loop* evloop_;
 

@@ -1,4 +1,5 @@
 #include "eventloop.h"
+#include "tcpserver.h"
 #include <sys/time.h>
 #include <sys/resource.h>
 
@@ -112,9 +113,9 @@ void event_loop::run()
     }
 }
 
-bool event_loop::addlistenfd(int fd)
+bool event_loop::addlistenfd(int fd, tcpserver* tcpsvr)
 {
-    if (listenfds_.insert(fd).second)
+    if (listenfds_.insert(std::make_pair(fd,tcpsvr)).second)
     {
         struct epoll_event ev;
         ev.data.fd = fd;
@@ -191,7 +192,10 @@ int event_loop::handleaccept(int listenfd)
             ::close(connfd);
             continue;
         }
-
+        tcpserver* tcpsvr = listenfds_[listenfd];
+        conn->set_inpack1callback(tcpsvr->get_inpack1callback());
+        conn->set_connectedcallback(tcpsvr->get_connectedcallback());
+        conn->set_closedcallback(tcpsvr->get_closedcallback());
         addconnection(conn);
 
     } while(connfd > 0);

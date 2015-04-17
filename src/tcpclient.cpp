@@ -1,5 +1,4 @@
 #include "tcpclient.h"
-#include "connection.h"
 #include "eventloop.h"
 
 tcpclient::tcpclient(event_loop* eloop):connfd_(-1),evloop_(eloop)
@@ -39,6 +38,9 @@ int tcpclient::connect(const char* ip, int port)
         connfd_ = -1;
         return -1;
     }
+    conn->set_inpack1callback(inpack1cb_);
+    conn->set_connectedcallback(connectedcb_);
+    conn->set_closedcallback(closedcb_);
     evloop_->addconnection(conn);
     return 0;
 }

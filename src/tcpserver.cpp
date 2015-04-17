@@ -35,7 +35,7 @@ int tcpserver::init(int listenport)
     if ( 0 != ::bind( listenfd_ , (struct sockaddr *)&addr , sizeof(addr) ) ) abort();
     if( 0 != ::listen( listenfd_, 1000000 ) ) abort();
 
-    if (!evloop_->addlistenfd(listenfd_)) abort();
+    if (!evloop_->addlistenfd(listenfd_,this)) abort();
     return 0;
 }
 
