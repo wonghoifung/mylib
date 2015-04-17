@@ -9,9 +9,31 @@
 #include "pack1.h"
 #include "packparser1.h"
 #include "connection.h"
+#include "tcpclient.h"
+#include "eventloop.h"
 
 int main()
 {
+#if 1
+    event_loop eloop;
+    tcpclient tc(&eloop);
+    if(tc.connect("127.0.0.1",9999)!=0) {
+        printf("cannot connect to 127.0.0.1:9999\n");
+        return 1;
+    }
+    for (int i=0; i<10; ++i) {
+        const char* snd_buf = "helloworld";
+        outpack1 out;
+        out.begin(100+i);
+        out.writeint(i);
+        out.writestring(snd_buf);
+        out.end();
+        tc.send(&out);
+        printf("send i:%d, msg:%s, packetsize:%d\n",i,snd_buf,out.packet_size());
+    }
+    eloop.run();
+    return 0;
+#else
     char *argv[] = {"127.0.0.1", "9999"};
     int connect_fd;
     int ret;
@@ -38,7 +60,8 @@ int main()
     }
   
     //connection conn(connect_fd);
- 
+
+
     memset(snd_buf,0,1024);
     while(1){
         write(STDOUT_FILENO,"input message:",14);
@@ -64,6 +87,7 @@ int main()
     }
    
     close(connect_fd);
+#endif
     return 0;
 }
 

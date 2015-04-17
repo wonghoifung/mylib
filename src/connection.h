@@ -34,7 +34,7 @@ public:
     int onread();
     int onwrite();
 
-//private:
+private:
     int fd_;
     uint32_t fdindex_; 
     ipackparser* parser1_;

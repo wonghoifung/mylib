@@ -31,6 +31,7 @@ public:
     void dellistenfd(int fd);
     bool islistenfd(int fd);
 
+    connection* getconnection(int fd);
     bool addconnection(connection* conn);
     int handleaccept(int listenfd);
     void delconnection(connection* conn);

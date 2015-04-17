@@ -140,6 +140,11 @@ bool event_loop::islistenfd(int fd)
     return (listenfds_.find(fd) != listenfds_.end());
 }
 
+connection* event_loop::getconnection(int fd)
+{
+    return fdconns_[fd];
+}
+
 bool event_loop::addconnection(connection* conn)
 {
     if (conn==NULL) { return false; }
