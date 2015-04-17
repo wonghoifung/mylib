@@ -183,7 +183,7 @@ int event_loop::handleaccept(int listenfd)
         ::setsockopt(connfd, SOL_SOCKET, SO_SNDBUF, &opt, optlen);
 
         int opts = fcntl(connfd, F_GETFL);
-        if(opts < 0) { continue; } // TODO log
+        if(opts < 0) { continue; } // TODO log 
         opts = opts | O_NONBLOCK;
         if(fcntl(connfd, F_SETFL, opts) < 0) { continue; }
 
@@ -217,7 +217,7 @@ void event_loop::delconnection(connection* conn)
     ::epoll_ctl(epollfd_, EPOLL_CTL_DEL, conn->getfd(), &ev);
     ::close(conn->getfd());
 
-    // TODO reuse
+    // don't reuse, because connection use too much space
     delete conn;
     conn = NULL;
 }

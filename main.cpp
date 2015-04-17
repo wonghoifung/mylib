@@ -5,12 +5,31 @@
 #include "tcpserver.h"
 
 void on_inpack1(connection* conn, inpack1* pack) {
+    int cmd = pack->getcmd();
+    int num1 =  pack->readint();
+    std::string str1 = pack->readstring();
+    printf("[from:%s] cmd:%d, num1:%d, str1:%s\n",
+        conn->get_peeraddr().c_str(),
+        cmd,num1,str1.c_str());
+
+    outpack1 out;
+    out.begin(99);
+    out.writeint(999);
+    out.writestring("helloclient");
+    out.end();
+    conn->send(&out);
 }
 
 void on_connected(connection* conn) {
+    printf("connected local:%s <-> peer:%s\n",
+        conn->get_localaddr().c_str(),
+        conn->get_peeraddr().c_str());
 }
 
 void on_closed(connection* conn) {
+    printf("closed local:%s <-> peer:%s\n",
+        conn->get_localaddr().c_str(),
+        conn->get_peeraddr().c_str());
 }
 
 int main( int argc, char* argv[] )

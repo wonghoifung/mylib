@@ -1,6 +1,7 @@
 #ifndef CONNECTION_HEADER
 #define CONNECTION_HEADER
 
+#include <string>
 #include <boost/noncopyable.hpp>
 #include <boost/function.hpp>
 
@@ -36,6 +37,9 @@ public:
     void set_inpack1callback(inpack1callback cb) {inpack1cb_=cb;}
     void set_connectedcallback(connectedcallback cb) {connectedcb_=cb;}
     void set_closedcallback(closedcallback cb) {closedcb_=cb;}
+
+    std::string get_localaddr();
+    std::string get_peeraddr();
 
     int onconnected();
     int onclosed();

@@ -4,6 +4,46 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
+namespace 
+{
+    std::string strnetaddr(const struct sockaddr_in& addr)
+    {
+        char buf[64] = {0};
+        unsigned size = sizeof buf;
+        assert(size >= INET_ADDRSTRLEN);
+        ::inet_ntop(AF_INET, &addr.sin_addr, buf, static_cast<socklen_t>(size));
+        size_t end = ::strlen(buf);
+        uint16_t port = ntohs(addr.sin_port);
+        assert(size > end);
+        snprintf(buf+end, size-end, ":%u", port);
+        return buf;
+    }
+
+    struct sockaddr_in localaddr(int sockfd)
+    {
+        struct sockaddr_in localaddr;
+        bzero(&localaddr, sizeof localaddr);
+        socklen_t addrlen = static_cast<socklen_t>(sizeof localaddr);
+        if (::getsockname(sockfd, (struct sockaddr*)(&localaddr), &addrlen) < 0)
+        {
+            // log error
+        }
+        return localaddr;
+    }
+
+    struct sockaddr_in peeraddr(int sockfd)
+    {
+        struct sockaddr_in peeraddr;
+        bzero(&peeraddr, sizeof peeraddr);
+        socklen_t addrlen = static_cast<socklen_t>(sizeof peeraddr);
+        if (::getpeername(sockfd, (struct sockaddr*)(&peeraddr), &addrlen) < 0)
+        {
+            // log error
+        }
+        return peeraddr;
+    }
+}
+
 connection::connection(int fd, event_loop* eloop):
 fd_(fd),
 fdindex_(0),
@@ -37,9 +77,6 @@ connection::~connection()
 
 int connection::onpackcomplete(inpack1* pack)
 {
-    printf("cmd: %d\n", pack->getcmd());
-    printf("int: %d\n", pack->readint());
-    printf("str: %s\n", pack->readstring().c_str());
     if (inpack1cb_) inpack1cb_(this, pack);
     return 0;
 }
@@ -95,6 +132,18 @@ int connection::socketwrite()
 bool connection::needtowritesocket()
 {
     return (sndloopbuf_->datacount() > 0);
+}
+
+std::string connection::get_localaddr()
+{
+    struct sockaddr_in addr = localaddr(fd_);
+    return strnetaddr(addr);
+}
+
+std::string connection::get_peeraddr()
+{
+    struct sockaddr_in addr = peeraddr(fd_);
+    return strnetaddr(addr);
 }
 
 int connection::onconnected()
