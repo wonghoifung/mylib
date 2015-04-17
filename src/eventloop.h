@@ -22,30 +22,30 @@
 class event_loop : boost::noncopyable
 {
 public:
-	event_loop();
-	~event_loop();
+    event_loop();
+    ~event_loop();
     void init();
-	void run();
+    void run();
 
-	bool addlistenfd(int fd);
-	void dellistenfd(int fd);
-	bool islistenfd(int fd);
+    bool addlistenfd(int fd);
+    void dellistenfd(int fd);
+    bool islistenfd(int fd);
 
-	bool addconnection(connection* conn);
-	int handleaccept(int listenfd);
-	void delconnection(connection* conn);
+    bool addconnection(connection* conn);
+    int handleaccept(int listenfd);
+    void delconnection(connection* conn);
 
-	void setwrite(connection* conn);
-	void setread(connection* conn);
+    void setwrite(connection* conn);
+    void setread(connection* conn);
 
 private:
-	bool stop_;
-	int epollfd_;
-	connection** fdconns_;
-	int fdcount_;
-	uint32_t fdindex_; 
-	epoll_event* epevents_;
-	std::set<int> listenfds_;
+    bool stop_;
+    int epollfd_;
+    connection** fdconns_;
+    int fdcount_;
+    uint32_t fdindex_; 
+    epoll_event* epevents_;
+    std::set<int> listenfds_;
 };
 
 #endif
