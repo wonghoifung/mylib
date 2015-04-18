@@ -15,7 +15,7 @@
 #include <sys/epoll.h>
 #include <map>
 #include <boost/noncopyable.hpp>
-#include "pack1.h"
+#include "pack1.hpp"
 #include "packparser1.h"
 #include "connection.h"
 

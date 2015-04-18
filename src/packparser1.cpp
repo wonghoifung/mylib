@@ -1,5 +1,5 @@
 #include "packparser1.h"
-#include "pack1.h"
+#include "pack1.hpp"
 #include "connection.h"
 
 class packparser1 :  public ipackparser
