@@ -18,9 +18,12 @@ int tcpclient::connect(const char* ip, int port)
 {
     connfd_ = ::socket(PF_INET,SOCK_STREAM,0);
     if(connfd_<0){
-        // TODO log
+        // log
         return -1;
-    }   
+    }
+    //setnonblock(connfd_);
+    setcloseonexec(connfd_);
+    
     struct sockaddr_in srv_addr;
     memset(&srv_addr,0,sizeof(srv_addr));
     srv_addr.sin_family = AF_INET;
@@ -32,6 +35,7 @@ int tcpclient::connect(const char* ip, int port)
         connfd_ = -1;
         return -1;
     }
+    setnonblock(connfd_); // set nonblock after connected
     connection* conn = new connection(connfd_,evloop_);
     if (conn==NULL) {
         ::close(connfd_);

@@ -18,13 +18,16 @@ public:
     inpack1callback get_inpack1callback() {return inpack1cb_;}
     connectedcallback get_connectedcallback() {return connectedcb_;}
     closedcallback get_closedcallback() {return closedcb_;}
-
+    int getidlefd() {return idlefd_;}
+    void setidlefd(int fd) {idlefd_=fd;}
+    
 private:
     int listenfd_;
     event_loop* evloop_;
     inpack1callback inpack1cb_;
     connectedcallback connectedcb_;
     closedcallback closedcb_;
+    int idlefd_;
 };
 
 #endif

@@ -18,6 +18,7 @@
 #include "pack1.hpp"
 #include "packparser1.h"
 #include "connection.h"
+#include "timerheap.hpp"
 
 class tcpserver;
 
@@ -35,12 +36,15 @@ public:
 
     connection* getconnection(int fd);
     bool addconnection(connection* conn);
-    int handleaccept(int listenfd);
     void delconnection(connection* conn);
+    int handleaccept(int listenfd);
+    int handlesignal(int fd);
 
     void setwrite(connection* conn);
     void setread(connection* conn);
-
+    
+    timerheap& gettimerheap() {return timerheap_;}
+    
 private:
     bool stop_;
     int epollfd_;
@@ -49,7 +53,22 @@ private:
     uint32_t fdindex_; 
     epoll_event* epevents_;
     std::map<int,tcpserver*> listenfds_;
+    timerheap timerheap_;
 };
+
+inline void setnonblock(int fd)
+{
+    int flags = ::fcntl(fd, F_GETFL, 0);
+    flags |= O_NONBLOCK;
+    ::fcntl(fd, F_SETFL, flags);
+}
+
+inline void setcloseonexec(int fd)
+{
+    int flags = ::fcntl(fd, F_GETFD, 0);
+    flags |= FD_CLOEXEC;
+    ::fcntl(fd, F_SETFD, flags);
+}
 
 #endif
 
