@@ -27,6 +27,7 @@ namespace
         sa.sa_flags |= SA_RESTART;
         sigfillset(&sa.sa_mask);
         if (sigaction(sig, &sa, NULL)==-1) {
+            printf("sig:%d, errno:%d, strerror:%s\n",sig,errno,strerror(errno));
             abort();
         }
     }
@@ -58,7 +59,7 @@ namespace
         epoll_event ev;
         ev.data.fd = signal_pipefd[0];
         ev.events = EPOLLIN | EPOLLET;
-        ::epoll_ctl(epollfd, EPOLL_CTL_ADD, fd, &ev);
+        ::epoll_ctl(epollfd, EPOLL_CTL_ADD, signal_pipefd[0], &ev);
         setnonblock(signal_pipefd[0]);
     }
     
@@ -116,7 +117,6 @@ void event_loop::init()
     addsignal(SIGURG);
     addsignal(SIGUSR1);
     addsignal(SIGUSR2);
-    addsignal(SIGKILL);
     ignoresignal(SIGPIPE);
 }
 
@@ -327,7 +327,6 @@ int event_loop::handleaccept(int listenfd)
 
 int event_loop::handlesignal(int fd)
 {
-    int sig(0);
     char signals[1024] = {0};
     int ret = ::recv(fd, signals, sizeof(signals), 0);
     if (ret > 0) {
@@ -338,7 +337,6 @@ int event_loop::handlesignal(int fd)
                     return 0;
                 case SIGTERM:
                 case SIGINT:
-                case SIGKILL:
                 case SIGUSR1:
                 case SIGUSR2:
                     stop_ = true;

@@ -1,10 +1,22 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "pack1.h"
+#include "pack1.hpp"
 #include "packparser1.h"
 #include "connection.h"
 #include "tcpclient.h"
 #include "eventloop.h"
+
+void on_timeout(void* ud) {
+    connection* conn = (connection*)ud;
+    const char* snd_buf = "helloworld";
+    outpack1 out;
+    out.begin(100);
+    out.writeint(time(NULL));
+    out.writestring(snd_buf);
+    out.end();
+    conn->send(&out);
+    printf("send msg:%s, packetsize:%d\n",snd_buf,out.packet_size());
+}
 
 void on_inpack1(connection* conn, inpack1* pack) {
     int cmd = pack->getcmd();
@@ -19,17 +31,8 @@ void on_connected(connection* conn) {
     printf("connected local:%s <-> peer:%s\n",
         conn->get_localaddr().c_str(),
         conn->get_peeraddr().c_str());
-    for (int i=0; i<10; ++i) {
-        const char* snd_buf = "helloworld";
-        outpack1 out;
-        out.begin(100+i);
-        out.writeint(i);
-        out.writestring(snd_buf);
-        out.end();
-        conn->send(&out);
-        printf("send i:%d, msg:%s, packetsize:%d\n",i,snd_buf,out.packet_size());
-    }
 
+    conn->getevloop()->gettimerheap().addrepeattimer(1,3,on_timeout,conn);
 }
 
 void on_closed(connection* conn) {

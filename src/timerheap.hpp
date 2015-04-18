@@ -48,7 +48,7 @@ public:
     }
     
     timerheap(timer** initarray, int size, int capacity):
-    cursize_(size), capacity_(capacity)
+    capacity_(capacity), cursize_(size)
     {
         if (capacity < size) {
             abort();
@@ -118,7 +118,7 @@ public:
             array_[0] = array_[--cursize_];
             percolatedown(0);
             if (!array_[0]->oneshot_ && array_[0]->cb_) {
-                tmp->expire_ = time(NULL) + tmp->interval;
+                tmp->expire_ = time(NULL) + tmp->interval_;
                 addtimer(tmp);
             } else {
                 delete tmp;
@@ -176,7 +176,7 @@ private:
         timer* tmp = array_[hole];
         int child = 0;
         for (; ((hole*2+1) <= (cursize_-1)); hole=child) {
-            chile = hole*2+1;
+            child = hole*2+1;
             if ((child < (cursize_-1)) &&
                 (array_[child+1]->expire_ < array_[child]->expire_)) {
                 ++child;

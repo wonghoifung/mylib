@@ -40,6 +40,7 @@ public:
 
     std::string get_localaddr();
     std::string get_peeraddr();
+    event_loop* getevloop() {return evloop_;}
 
     int onconnected();
     int onclosed();
