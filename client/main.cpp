@@ -6,6 +6,8 @@
 #include "tcpclient.h"
 #include "eventloop.h"
 
+timer* globaltimer = NULL;
+
 void on_timeout(void* ud) {
     connection* conn = (connection*)ud;
     const char* snd_buf = "helloworld";
@@ -32,13 +34,15 @@ void on_connected(connection* conn) {
         conn->get_localaddr().c_str(),
         conn->get_peeraddr().c_str());
 
-    conn->getevloop()->gettimerheap().addrepeattimer(1,3,on_timeout,conn);
+    globaltimer = conn->getevloop()->gettimerheap().addrepeattimer(1,3,on_timeout,conn);
 }
 
 void on_closed(connection* conn) {
     printf("closed local:%s <-> peer:%s\n",
         conn->get_localaddr().c_str(),
         conn->get_peeraddr().c_str());
+    
+    conn->getevloop()->gettimerheap().deltimer(globaltimer);
 }
 
 int main()

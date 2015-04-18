@@ -16,24 +16,31 @@ tcpclient::~tcpclient()
 
 int tcpclient::connect(const char* ip, int port)
 {
-    connfd_ = ::socket(PF_INET,SOCK_STREAM,0);
-    if(connfd_<0){
-        // log
-        return -1;
-    }
-    //setnonblock(connfd_);
-    setcloseonexec(connfd_);
+    while(1) {
+        connfd_ = ::socket(PF_INET,SOCK_STREAM,0);
+        if(connfd_<0){
+            // log
+            return -1;
+        }
+        setcloseonexec(connfd_);
     
-    struct sockaddr_in srv_addr;
-    memset(&srv_addr,0,sizeof(srv_addr));
-    srv_addr.sin_family = AF_INET;
-    srv_addr.sin_addr.s_addr = inet_addr(ip);
-    srv_addr.sin_port = htons(port);
-    int ret = ::connect(connfd_, (struct sockaddr*)&srv_addr, sizeof srv_addr);
-    if(ret==-1){
-        ::close(connfd_);
-        connfd_ = -1;
-        return -1;
+        struct sockaddr_in srv_addr;
+        memset(&srv_addr,0,sizeof(srv_addr));
+        srv_addr.sin_family = AF_INET;
+        srv_addr.sin_addr.s_addr = inet_addr(ip);
+        srv_addr.sin_port = htons(port);
+        int ret = ::connect(connfd_, (struct sockaddr*)&srv_addr, sizeof srv_addr);
+        if(ret==-1){
+            ::close(connfd_);
+            connfd_ = -1;
+            return -1;
+        }
+        if(isselfconnect(connfd_)) {
+            ::close(connfd_);
+            connfd_=-1;
+            continue;
+        }
+        break;
     }
     setnonblock(connfd_); // set nonblock after connected
     connection* conn = new connection(connfd_,evloop_);

@@ -43,6 +43,13 @@ namespace
         return peeraddr;
     }
 }
+bool isselfconnect(int sockfd)
+{
+    struct sockaddr_in local = localaddr(sockfd);
+    struct sockaddr_in peer = peeraddr(sockfd);
+    return local.sin_port == peer.sin_port
+        && local.sin_addr.s_addr == peer.sin_addr.s_addr;
+}
 
 connection::connection(int fd, event_loop* eloop):
 fd_(fd),

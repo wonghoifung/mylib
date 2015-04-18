@@ -64,6 +64,8 @@ private:
     char recvbuf_[RECVBUF_SIZE];
 };
 
+bool isselfconnect(int sockfd);
+
 #endif
 
 
