@@ -291,7 +291,7 @@ int event_loop::handleaccept(int listenfd)
         connfd = ::accept( listenfd, ( struct sockaddr* )&client_address, &client_addrlength );
         if (connfd < 0) {
             if (errno==EMFILE) {
-                // method by Marc Lehmann, author of livev
+                // method by Marc Lehmann, author of libev and libeio
                 ::close(tcpsvr->getidlefd());
                 int fd = ::accept(listenfd, NULL, NULL);
                 ::close(fd);
