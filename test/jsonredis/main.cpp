@@ -83,7 +83,7 @@ std::pair<std::string,bool> readFromRedis(const std::string& key) {
     freeReplyObject(r);
     redisFree(c);
     free(command);
-    return std::make_pair(str,false);
+    return std::make_pair(str,true);
 }
 
 int main() {
