@@ -1,8 +1,9 @@
-#include "json/json.h"
 #include <stdio.h>
 #include <string>
 #include <map>
 #include <hiredis/hiredis.h> 
+#include "json/json.h"
+#include "base64.h"
 
 std::string JsonEncode(const Json::Value& data) {
     Json::FastWriter writer;
@@ -34,8 +35,14 @@ bool writeToRedis(const std::string& key, const std::string& value) {
         redisFree(c);
         return false;
     }
-    char* command = (char*)malloc(128 + key.size() + value.size());
-    sprintf(command, "set %s %s", key.c_str(), value.c_str());
+
+    //char* command = (char*)malloc(128 + key.size() + value.size());
+    //sprintf(command, "set %s %s", key.c_str(), value.c_str());
+
+    std::string newvalue = base64encode(value);
+    char* command = (char*)malloc(128 + key.size() + newvalue.size());
+    sprintf(command, "set %s %s", key.c_str(), newvalue.c_str());
+    
     printf("command:%s\n",command);
     redisReply* r = (redisReply*)redisCommand(c, command);
     if (NULL==r) {
@@ -83,7 +90,8 @@ std::pair<std::string,bool> readFromRedis(const std::string& key) {
     freeReplyObject(r);
     redisFree(c);
     free(command);
-    return std::make_pair(str,true);
+    //return std::make_pair(str,true);
+    return std::make_pair(base64decode(str),true);
 }
 
 int main() {
@@ -91,7 +99,7 @@ int main() {
     param["method"] = "test";
     param["id"] = 123;
     param["param"] = 456;
-    param["key"] = "xxxxxxxxx";
+    param["key"] = "xxx x  x测试xxxx";
     char curl_data[1024] = {0};
     snprintf(curl_data,1024,"%s",JsonEncode(param).c_str());
     printf("%s\n", curl_data);
