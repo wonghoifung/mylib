@@ -69,10 +69,12 @@ protected:
 private:
 	bool read_header(const char *data, const size_t length, size_t & ndx)
 	{
+		/*
 		if (0 == ndx)
 		{
 			packpos_ = 0;			
 		}
+		*/
 		
 		while(packpos_ < inpack1::PACKET_HEADER_SIZE && ndx < length)
 		{
